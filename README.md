@@ -1,7 +1,7 @@
-# Safe Assessment Chain
+# Safe Assessment Chain - Integrating Blockchain and Computer Vision for a Secure Examination Process
 
-**Integrating Blockchain and Computer Vision for a Secure Examination Process**
-![3d-rendering-blockchain-technology](https://github.com/user-attachments/assets/3e47bef4-d1c6-4bf3-8591-fa284742b0a3)
+
+![Blockchain Technology](https://github.com/user-attachments/assets/3e47bef4-d1c6-4bf3-8591-fa284742b0a3)
 
 ---
 
@@ -50,3 +50,42 @@ The **Safe Assessment Chain** is a cutting-edge project combining blockchain tec
 
    ```bash
    pip install -r requirements.txt
+
+## Setup and Deployment
+
+Follow the steps below to set up and run the project:
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/ishan22399/Safe-Assessment-Chain---Integrating-Blockchain-and-Computer-Vision-for-a-Secure-Examination-Process.git
+cd Safe-Assessment-Chain---Integrating-Blockchain-and-Computer-Vision-for-a-Secure-Examination-Process
+```
+
+### 2. Setup Blockchain
+
+1. **Launch Ganache**  
+   Start a local Ethereum blockchain using Ganache.
+
+2. **Deploy Smart Contracts**  
+   Use the following tool to deploy the smart contracts:
+   - **Remix IDE**:  
+     Open Remix IDE, load the `.sol` files (`StudReg.sol`, `ExamAdd.sol`, `UserAuth.sol`), and deploy them individually to your local Ganache blockchain.
+
+### 3. Configure the Application
+
+```bash
+git clone https://github.com/ishan22399/Safe-Assessment-Chain---Integrating-Blockchain-and-Computer-Vision-for-a-Secure-Examination-Process.git
+cd Safe-Assessment-Chain---Integrating-Blockchain-and-Computer-Vision-for-a-Secure-Examination-Process
+```
+
+### 4. Run the Flask Application
+
+```bash
+python app.py
+Access the web interface at http://127.0.0.1:5000.
+```
+
+## Contribution
+Contributions are welcome! Please open an issue or submit a pull request.
+
