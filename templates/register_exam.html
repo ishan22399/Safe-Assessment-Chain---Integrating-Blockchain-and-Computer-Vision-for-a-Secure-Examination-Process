@@ -1,32 +1,711 @@
 {% extends "base.html" %}
 {% block title %}Register for Exam{% endblock %}
 {% block content %}
-<h2>Register for {{ exam.name }}</h2>
-<form method="POST" action="{{ url_for('register_exam', exam_id=exam.id) }}">
-    <div class="mb-3">
-        <label for="name" class="form-label">Name</label>
-        <input type="text" class="form-control" id="name" name="name" required>
+<style>
+    /* Base styling */
+    .registration-container {
+        max-width: 850px;
+        margin: 30px auto;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .registration-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.03);
+    }
+
+    /* Improved header styling */
+    .card-header {
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        padding: 30px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .page-title {
+        margin: 0 0 10px 0;
+        font-weight: 700;
+        font-size: 1.8rem;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .exam-name {
+        font-weight: 400;
+        font-size: 1.2rem;
+        opacity: 0.9;
+        margin: 0;
+        position: relative;
+        z-index: 1;
+    }
+
+    .card-body {
+        padding: 35px;
+    }
+
+    /* Auto-fill indicator styling */
+    .autofill-indicator {
+        display: inline-block;
+        font-size: 0.75rem;
+        padding: 2px 8px;
+        background-color: rgba(71, 118, 230, 0.1);
+        color: #4776E6;
+        border-radius: 12px;
+        font-weight: 500;
+        margin-left: 8px;
+    }
+
+    .autofilled {
+        background-color: #f8faff;
+        border-left: 3px solid #4776E6;
+    }
+
+    /* Form layout improvements */
+    .form-sections {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 30px;
+        margin-bottom: 20px;
+    }
+
+    .form-section {
+        margin-bottom: 25px;
+    }
+
+    .section-title {
+        font-size: 1.15rem;
+        font-weight: 600;
+        color: #4776E6;
+        margin-bottom: 22px;
+        display: flex;
+        align-items: center;
+        padding-bottom: 10px;
+        border-bottom: 1px solid #f0f0f8;
+    }
+
+    .section-title i {
+        margin-right: 12px;
+        background-color: rgba(71, 118, 230, 0.1);
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+    }
+    
+    .form-row {
+        margin-bottom: 22px;
+        position: relative;
+    }
+
+    /* Label styling */
+    .form-label {
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 10px;
+        display: block;
+        font-size: 0.95rem;
+    }
+
+    .required::after {
+        content: "*";
+        color: #e74c3c;
+        margin-left: 4px;
+    }
+
+    /* Input field styling */
+    .form-control {
+        width: 100%;
+        padding: 14px 15px 14px 45px;
+        border: 1.5px solid #e0e0f0;
+        border-radius: 8px;
+        transition: all 0.3s;
+        background-color: #fcfcff;
+        font-size: 1rem;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #4776E6;
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+        background-color: #fff;
+    }
+
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+        padding-top: 40px;
+        line-height: 1.5;
+    }
+
+    .input-with-icon {
+        position: relative;
+    }
+
+    .input-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #aaa;
+        transition: all 0.3s;
+    }
+
+    .textarea-icon {
+        top: 22px;
+    }
+
+    .input-with-icon .form-control:focus + .input-icon {
+        color: #4776E6;
+    }
+
+    .form-hint {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 6px;
+        display: flex;
+        align-items: center;
+    }
+
+    .help-icon {
+        margin-left: 5px;
+        color: #aaa;
+        cursor: help;
+    }
+
+    /* Validation styling */
+    .validation-message {
+        font-size: 0.85rem;
+        color: #e74c3c;
+        margin-top: 5px;
+        display: none;
+        padding: 3px 8px;
+        background-color: rgba(231, 76, 60, 0.05);
+        border-radius: 4px;
+    }
+
+    /* Terms section styling */
+    .registration-terms {
+        background: #f9f9ff;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 25px;
+        font-size: 0.95rem;
+        color: #555;
+        border-left: 4px solid #4776E6;
+        line-height: 1.6;
+    }
+
+    .registration-terms p:last-child {
+        margin-bottom: 0;
+    }
+
+    .blockchain-note {
+        display: flex;
+        align-items: center;
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .blockchain-note i {
+        color: #4776E6;
+        margin-right: 8px;
+        font-size: 1.1rem;
+    }
+
+    /* Checkbox styling */
+    .terms-checkbox {
+        display: flex;
+        align-items: flex-start;
+        margin-top: 24px;
+        padding: 5px;
+        cursor: pointer;
+    }
+
+    .custom-checkbox {
+        min-width: 22px;
+        height: 22px;
+        border: 2px solid #e0e0f0;
+        border-radius: 6px;
+        margin-right: 12px;
+        margin-top: 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .checkbox-input:checked + .custom-checkbox {
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        border-color: transparent;
+    }
+
+    .checkbox-input:checked + .custom-checkbox::after {
+        content: "✓";
+        color: white;
+        font-size: 14px;
+        font-weight: bold;
+    }
+
+    .checkbox-input {
+        display: none;
+    }
+
+    /* Button styling */
+    .btn-container {
+        text-align: center;
+        margin-top: 32px;
+    }
+
+    .btn-register {
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        padding: 14px 34px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1.05rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        box-shadow: 0 5px 15px rgba(71, 118, 230, 0.25);
+    }
+
+    .btn-register:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(71, 118, 230, 0.3);
+    }
+
+    .btn-register:active {
+        transform: translateY(-1px);
+    }
+
+    .btn-register:disabled {
+        opacity: 0.7;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    /* Steps styling */
+    .steps-container {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 35px;
+        position: relative;
+    }
+
+    .step {
+        text-align: center;
+        position: relative;
+        z-index: 1;
+        flex: 1;
+    }
+
+    .step-number {
+        width: 34px;
+        height: 34px;
+        border-radius: 50%;
+        background: #f0f0f8;
+        color: #888;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 8px;
+        font-weight: 600;
+        transition: all 0.3s;
+    }
+
+    .step-title {
+        font-size: 0.9rem;
+        color: #888;
+        font-weight: 500;
+    }
+
+    .step.active .step-number {
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        color: white;
+        box-shadow: 0 3px 10px rgba(71, 118, 230, 0.2);
+    }
+
+    .step.active .step-title {
+        color: #4776E6;
+        font-weight: 600;
+    }
+
+    .step.completed .step-number {
+        background: #2ecc71;
+        color: white;
+    }
+
+    .step.completed .step-number::after {
+        content: "✓";
+    }
+
+    .steps-bar {
+        position: absolute;
+        top: 17px;
+        left: 15%;
+        right: 15%;
+        height: 3px;
+        background: #f0f0f8;
+        z-index: 0;
+    }
+
+    .steps-progress {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        width: 33%;
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        transition: width 0.3s;
+        border-radius: 3px;
+    }
+
+    /* Animation styles */
+    @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        20%, 60% { transform: translateX(-5px); }
+        40%, 80% { transform: translateX(5px); }
+    }
+    
+    .shake {
+        animation: shake 0.5s ease-in-out;
+        border-color: #e74c3c !important;
+    }
+    
+    input:invalid:not(:focus), textarea:invalid:not(:focus) {
+        border-color: #e74c3c;
+    }
+    
+    input:focus:invalid, textarea:focus:invalid {
+        box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.15);
+    }
+</style>
+
+<div class="registration-container">
+    <div class="registration-card">
+        <div class="card-header">
+            <h2 class="page-title">Exam Registration</h2>
+            <p class="exam-name">{{ exam.name }}</p>
+        </div>
+        <div class="card-body">
+            <div class="steps-container">
+                <div class="steps-bar">
+                    <div class="steps-progress"></div>
+                </div>
+                <div class="step completed">
+                    <div class="step-number">1</div>
+                    <div class="step-title">Eligibility</div>
+                </div>
+                <div class="step active">
+                    <div class="step-number">2</div>
+                    <div class="step-title">Registration</div>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <div class="step-title">Confirmation</div>
+                </div>
+            </div>
+            
+            <form method="POST" action="{{ url_for('register_exam', exam_id=exam.id) }}" id="registrationForm">
+                <div class="form-sections">
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-user"></i> Personal Information
+                        </h3>
+                        
+                        <div class="form-row">
+                            <label for="name" class="form-label required">Full Name</label>
+                            <div class="input-with-icon">
+                                <input type="text" class="form-control {% if student.username %}autofilled{% endif %}" 
+                                       id="name" name="name" value="{{ student.username }}" required>
+                                <i class="fas fa-user-circle input-icon"></i>
+                            </div>
+                            {% if student.username %}
+                            <div class="form-hint">
+                                <span class="autofill-indicator">Auto-filled</span> from your profile
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="age" class="form-label required">Age</label>
+                            <div class="input-with-icon">
+                                <input type="number" class="form-control" id="age" name="age" min="1" required>
+                                <i class="fas fa-birthday-cake input-icon"></i>
+                            </div>
+                            <div class="form-hint">
+                                Must be between {{ exam.age_min }} and {{ exam.age_max }} years
+                                <i class="fas fa-question-circle help-icon" data-toggle="tooltip" 
+                                   title="Age verification is required for exam eligibility"></i>
+                            </div>
+                            <div class="validation-message" id="ageValidation">
+                                <i class="fas fa-exclamation-circle"></i> Age must be between {{ exam.age_min }} and {{ exam.age_max }}
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="aadhaar_number" class="form-label required">Aadhaar Number</label>
+                            <div class="input-with-icon">
+                                <input type="text" class="form-control {% if student.aadhaar_number %}autofilled{% endif %}" 
+                                       id="aadhaar_number" name="aadhaar_number" maxlength="12" pattern="[0-9]{12}" 
+                                       value="{{ student.aadhaar_number }}" required>
+                                <i class="fas fa-id-card input-icon"></i>
+                            </div>
+                            {% if student.aadhaar_number %}
+                            <div class="form-hint">
+                                <span class="autofill-indicator">Auto-filled</span> from your profile
+                            </div>
+                            {% else %}
+                            <div class="form-hint">12-digit Aadhaar number without spaces</div>
+                            {% endif %}
+                            <div class="validation-message" id="aadhaarValidation">
+                                <i class="fas fa-exclamation-circle"></i> Please enter a valid 12-digit Aadhaar number
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h3 class="section-title">
+                            <i class="fas fa-graduation-cap"></i> Educational Information
+                        </h3>
+                        
+                        <div class="form-row">
+                            <label for="college_name" class="form-label required">College Name</label>
+                            <div class="input-with-icon">
+                                <input type="text" class="form-control {% if student.college_name %}autofilled{% endif %}" 
+                                       id="college_name" name="college_name" value="{{ student.college_name }}" required>
+                                <i class="fas fa-university input-icon"></i>
+                            </div>
+                            {% if student.college_name %}
+                            <div class="form-hint">
+                                <span class="autofill-indicator">Auto-filled</span> from your profile
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="education_level" class="form-label required">Education Level</label>
+                            <div class="input-with-icon">
+                                <input type="text" class="form-control {% if student.education_level %}autofilled{% endif %}" 
+                                       id="education_level" name="education_level" value="{{ student.education_level }}" required>
+                                <i class="fas fa-book input-icon"></i>
+                            </div>
+                            <div class="form-hint">
+                                Required level: {{ exam.education_level }}
+                                <i class="fas fa-question-circle help-icon" data-toggle="tooltip" 
+                                   title="This exam requires {{ exam.education_level }} education level or higher"></i>
+                            </div>
+                            {% if student.education_level %}
+                            <div class="form-hint">
+                                <span class="autofill-indicator">Auto-filled</span> from your profile
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="form-row">
+                            <label for="address" class="form-label required">Address</label>
+                            <div class="input-with-icon">
+                                <textarea class="form-control" id="address" name="address" required></textarea>
+                                <i class="fas fa-map-marker-alt input-icon textarea-icon"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="registration-terms">
+                    <p><strong>Important:</strong> By registering for this exam, you confirm that all information provided is accurate and complete. Falsification of information may lead to disqualification.</p>
+                    
+                    <div class="blockchain-note">
+                        <i class="fas fa-cubes"></i>
+                        <span>Your exam registration will be securely recorded on the blockchain for tamper-proof verification.</span>
+                    </div>
+                </div>
+                
+                <div class="terms-checkbox">
+                    <input type="checkbox" id="terms" class="checkbox-input" required>
+                    <label for="terms" class="custom-checkbox"></label>
+                    <label for="terms">I confirm that all the information provided is correct and I agree to the terms and conditions</label>
+                </div>
+                
+                <div class="btn-container">
+                    <button type="submit" class="btn-register" id="registerBtn">
+                        <i class="fas fa-clipboard-check"></i> Complete Registration
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-    <div class="mb-3">
-        <label for="college_name" class="form-label">College Name</label>
-        <input type="text" class="form-control" id="college_name" name="college_name" required>
-    </div>
-    <div class="mb-3">
-        <label for="address" class="form-label">Address</label>
-        <textarea class="form-control" id="address" name="address" required></textarea>
-    </div>
-    <div class="mb-3">
-        <label for="aadhaar_number" class="form-label">Aadhaar Number</label>
-        <input type="text" class="form-control" id="aadhaar_number" name="aadhaar_number" maxlength="12" required>
-    </div>
-    <div class="mb-3">
-        <label for="age" class="form-label">Age</label>
-        <input type="number" class="form-control" id="age" name="age" required>
-    </div>
-    <div class="mb-3">
-        <label for="education_level" class="form-label">Education Level</label>
-        <input type="text" class="form-control" id="education_level" name="education_level" required>
-    </div>
-    <button type="submit" class="btn btn-primary">Register</button>
-</form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Enable tooltips
+        $(function () {
+            $('[data-toggle="tooltip"]').tooltip();
+        });
+
+        // Form validation
+        const form = document.getElementById('registrationForm');
+        const ageInput = document.getElementById('age');
+        const ageValidation = document.getElementById('ageValidation');
+        const aadhaarInput = document.getElementById('aadhaar_number');
+        const aadhaarValidation = document.getElementById('aadhaarValidation');
+        const termsCheckbox = document.getElementById('terms');
+        const registerBtn = document.getElementById('registerBtn');
+        
+        const minAge = {{ exam.age_min }};
+        const maxAge = {{ exam.age_max }};
+        
+        // Age validation
+        ageInput.addEventListener('input', function() {
+            const age = parseInt(this.value);
+            if (age < minAge || age > maxAge || isNaN(age)) {
+                ageValidation.style.display = 'block';
+                this.setCustomValidity('Age must be between ' + minAge + ' and ' + maxAge);
+                this.classList.add('is-invalid');
+                this.classList.remove('is-valid');
+            } else {
+                ageValidation.style.display = 'none';
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            }
+        });
+        
+        // Aadhaar validation with improved error handling
+        aadhaarInput.addEventListener('input', function() {
+            this.value = this.value.replace(/[^0-9]/g, '').substring(0, 12);
+            
+            if (this.value.length === 12) {
+                aadhaarValidation.style.display = 'none';
+                this.setCustomValidity('');
+                this.classList.remove('is-invalid');
+                this.classList.add('is-valid');
+            } else {
+                aadhaarValidation.style.display = this.value.length > 0 ? 'block' : 'none';
+                this.setCustomValidity('Please enter a valid 12-digit Aadhaar number');
+                this.classList.remove('is-valid');
+                if (this.value.length > 0) {
+                    this.classList.add('is-invalid');
+                } else {
+                    this.classList.remove('is-invalid');
+                }
+            }
+        });
+        
+        // Validate all text fields
+        document.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(input => {
+            // Validate on input
+            input.addEventListener('input', function() {
+                validateField(this);
+            });
+            
+            // Validate on blur
+            input.addEventListener('blur', function() {
+                validateField(this, true);
+            });
+            
+            // Initial validation for pre-filled fields
+            if (input.value.trim().length > 0) {
+                validateField(input);
+            }
+        });
+        
+        function validateField(field, showInvalid = false) {
+            if (field.checkValidity()) {
+                field.classList.remove('is-invalid');
+                if (field.value.trim().length > 0) {
+                    field.classList.add('is-valid');
+                } else {
+                    field.classList.remove('is-valid');
+                }
+            } else {
+                if (showInvalid || field.value.trim().length > 0) {
+                    field.classList.add('is-invalid');
+                    field.classList.remove('is-valid');
+                }
+            }
+        }
+        
+        // Terms checkbox
+        termsCheckbox.addEventListener('change', function() {
+            registerBtn.disabled = !this.checked;
+        });
+        
+        // Form submission animation
+        form.addEventListener('submit', function(e) {
+            const formElements = form.elements;
+            let isValid = true;
+            
+            // Validate all fields and highlight errors
+            for (let i = 0; i < formElements.length; i++) {
+                if (!formElements[i].checkValidity()) {
+                    isValid = false;
+                    formElements[i].classList.add('shake');
+                    formElements[i].classList.add('is-invalid');
+                    
+                    setTimeout(() => {
+                        formElements[i].classList.remove('shake');
+                    }, 600);
+                }
+            }
+            
+            if (isValid) {
+                // Update step indicator
+                document.querySelector('.steps-progress').style.width = '100%';
+                document.querySelectorAll('.step')[1].classList.add('completed');
+                document.querySelectorAll('.step')[2].classList.add('active');
+                
+                // Update button state
+                registerBtn.disabled = true;
+                registerBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            } else {
+                e.preventDefault();
+                
+                // Scroll to the first invalid field
+                const firstInvalid = document.querySelector('.is-invalid');
+                if (firstInvalid) {
+                    firstInvalid.focus();
+                    firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        });
+        
+        // Initially disable register button if terms not checked
+        registerBtn.disabled = !termsCheckbox.checked;
+        
+        // Add CSS classes for pre-filled fields for visual feedback
+        document.querySelectorAll('.autofilled').forEach(field => {
+            field.classList.add('is-valid');
+        });
+    });
+</script>
 {% endblock %}

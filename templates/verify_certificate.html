@@ -1,0 +1,561 @@
+{% extends "base.html" %}
+{% block title %}Certificate Verification{% endblock %}
+{% block content %}
+<style>
+    /* Professional container styling */
+    .verification-container {
+        max-width: 900px;
+        margin: 30px auto;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Enhanced verification form styling */
+    .verify-form-container {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+        padding: 40px;
+        margin-bottom: 40px;
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .verify-form-container::before {
+        content: "";
+        position: absolute;
+        width: 200%;
+        height: 200%;
+        top: -50%;
+        left: -50%;
+        z-index: -1;
+        background: linear-gradient(0deg, transparent, rgba(71, 118, 230, 0.03), transparent);
+        transform: rotate(30deg);
+    }
+
+    .verify-form-icon {
+        width: 110px;
+        height: 110px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 25px;
+        box-shadow: 0 10px 20px rgba(71, 118, 230, 0.3);
+        position: relative;
+    }
+    
+    .verify-form-icon::after {
+        content: '';
+        position: absolute;
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        border: 2px solid rgba(71, 118, 230, 0.3);
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.1); opacity: 0.7; }
+        100% { transform: scale(1); opacity: 1; }
+    }
+    
+    .verify-form-icon i {
+        font-size: 3.2rem;
+        color: white;
+    }
+
+    .verify-form-title {
+        font-size: 2.2rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .verify-form-subtitle {
+        color: #666;
+        font-size: 1.1rem;
+        margin-bottom: 35px;
+        max-width: 80%;
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    /* Beautiful input group styling */
+    .form-input-group {
+        max-width: 600px;
+        margin: 35px auto;
+        display: flex;
+        gap: 15px;
+        position: relative;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+        border-radius: 12px;
+        padding: 5px;
+        background: white;
+    }
+
+    .verify-input {
+        flex-grow: 1;
+        padding: 16px 20px;
+        border: 2px solid #e0e0f0;
+        border-radius: 10px;
+        font-size: 1.05rem;
+        transition: all 0.3s;
+        font-family: 'Courier New', monospace;
+        background: #f9faff;
+        color: #444;
+    }
+
+    .verify-input:focus {
+        border-color: var(--primary-gradient-start);
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+        outline: none;
+        background: white;
+    }
+
+    .verify-input::placeholder {
+        color: #aaa;
+        font-style: italic;
+    }
+
+    .verify-btn {
+        background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+        color: white;
+        border: none;
+        border-radius: 10px;
+        padding: 16px 32px;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 1.05rem;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+        box-shadow: 0 5px 15px rgba(71, 118, 230, 0.3);
+    }
+
+    .verify-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(71, 118, 230, 0.4);
+    }
+
+    .verify-btn:active {
+        transform: translateY(1px);
+        box-shadow: 0 3px 10px rgba(71, 118, 230, 0.3);
+    }
+
+    /* Improved certificate actions styling */
+    .certificate-actions {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin: 0 auto 30px;
+        max-width: 85%;
+        position: relative;
+    }
+
+    .certificate-actions::before {
+        content: '';
+        position: absolute;
+        width: 80%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+        top: -15px;
+        left: 10%;
+    }
+
+    .certificate-actions::after {
+        content: '';
+        position: absolute;
+        width: 80%;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(0,0,0,0.1), transparent);
+        bottom: -15px;
+        left: 10%;
+    }
+
+    .action-btn {
+        padding: 14px 28px;
+        font-weight: 600;
+        border-radius: 50px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        transition: all 0.3s;
+        text-decoration: none !important;
+        border: none;
+        cursor: pointer;
+        flex: 1;
+        min-width: 180px;
+        color: white !important;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        z-index: 1;
+    }
+
+    .action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(255,255,255,0.1);
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+        z-index: -1;
+    }
+
+    .action-btn:hover::before {
+        transform: translateX(0);
+    }
+
+    .action-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .action-btn:active {
+        transform: translateY(1px);
+    }
+
+    .btn-download {
+        background: linear-gradient(135deg, #5cb85c, #449d44);
+    }
+
+    .btn-print {
+        background: linear-gradient(135deg, #2196F3, #0d8aee);
+    }
+
+    .btn-share {
+        background: linear-gradient(135deg, #9C27B0, #7B1FA2);
+    }
+
+    /* Enhanced verification badge */
+    .verification-status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        padding: 12px 28px;
+        border-radius: 50px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        margin: 0 auto 30px;
+        position: relative;
+        z-index: 5;
+        font-size: 1.15rem;
+        transform: translateY(-30px);
+    }
+
+    .verification-status-badge.verified {
+        background: linear-gradient(90deg, #28a745, #20c997);
+        color: white;
+    }
+
+    .verification-status-badge.verified i {
+        background: white;
+        color: #28a745;
+        width: 26px;
+        height: 26px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-right: 5px;
+    }
+
+    /* Elegant certificate styling */
+    .certificate-container {
+        position: relative;
+        border-radius: 15px;
+        overflow: hidden;
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        margin: 40px auto;
+        max-width: 800px;
+        background: white;
+        border: 5px solid transparent;
+        background-clip: padding-box;
+        transform-style: preserve-3d;
+        perspective: 1000px;
+        transition: transform 0.5s;
+    }
+
+    .certificate-container:hover {
+        transform: rotate3d(1, 1, 0, 2deg);
+    }
+
+    .certificate-container::before {
+        content: '';
+        position: absolute;
+        inset: -5px;
+        background: linear-gradient(135deg, var(--primary-gradient-start), var(--primary-gradient-end));
+        z-index: -1;
+        border-radius: 18px;
+    }
+
+    /* Enhanced QR code with better styling */
+    .qr-code {
+        position: absolute;
+        right: 40px;
+        bottom: 40px;
+        background: white;
+        padding: 10px;
+        border-radius: 12px;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+        border: 1px solid #eee;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 120px;
+        transform: rotate(2deg);
+        transition: all 0.3s ease;
+    }
+
+    .qr-code:hover {
+        transform: rotate(0) scale(1.05);
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    .qr-code img {
+        width: 100px;
+        height: 100px;
+        object-fit: contain;
+        image-rendering: crisp-edges;
+    }
+    
+    .qr-code-caption {
+        font-size: 0.75rem;
+        color: #666;
+        text-align: center;
+        margin-top: 8px;
+        font-weight: 500;
+    }
+
+    /* Admin seal with enhanced styling */
+    .admin-seal {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100px;
+        height: 100px;
+        border: 2px solid var(--primary-gradient-start);
+        border-radius: 50%;
+        position: absolute;
+        bottom: 35px;
+        left: 35px;
+        transform: rotate(-15deg);
+        background-color: rgba(255,255,255,0.95);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        transition: transform 0.3s ease;
+        cursor: default;
+    }
+
+    .admin-seal:hover {
+        transform: rotate(0);
+    }
+
+    .admin-seal-inner {
+        width: 85px;
+        height: 85px;
+        border: 1px solid var(--primary-gradient-start);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        font-size: 0.7rem;
+        color: var(--primary-gradient-start);
+        font-weight: 600;
+        text-align: center;
+    }
+
+    /* Error state styling */
+    .verify-form {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        padding: 30px;
+        margin-bottom: 40px;
+        text-align: center;
+        border: 1px solid rgba(220,53,69,0.1);
+    }
+
+    .verify-form .alert {
+        border-left: 4px solid #dc3545;
+    }
+
+    /* Print styling improvements */
+    @media print {
+        body * {
+            visibility: hidden;
+        }
+        .certificate-container, .certificate-container * {
+            visibility: visible;
+        }
+        .certificate-container {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            box-shadow: none !important;
+            border: none !important;
+        }
+        .certificate-container::before {
+            display: none;
+        }
+        .no-print {
+            display: none !important;
+        }
+    }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .verify-form-container {
+            padding: 30px 20px;
+        }
+        
+        .form-input-group {
+            flex-direction: column;
+            padding: 0;
+            box-shadow: none;
+        }
+        
+        .verify-btn {
+            width: 100%;
+            justify-content: center;
+        }
+        
+        .certificate-actions {
+            flex-direction: column;
+        }
+        
+        .action-btn {
+            width: 100%;
+        }
+    }
+</style>
+
+<div class="verification-container">
+    <div class="page-header">
+        <h1 class="page-title">Certificate Verification</h1>
+    </div>
+
+    {% if not is_verified and not tx_hash %}
+    <!-- Beautifully styled verification form -->
+    <div class="verify-form-container">
+        <div class="verify-form-icon">
+            <i class="fas fa-certificate"></i>
+        </div>
+        <h2 class="verify-form-title">Verify Certificate</h2>
+        <p class="verify-form-subtitle">Enter the transaction hash to verify certificate authenticity on the blockchain</p>
+        
+        <form action="{{ url_for('verify_certificate', tx_hash='placeholder') }}" method="GET" id="verifyForm">
+            <div class="form-input-group">
+                <input type="text" class="verify-input" id="txHashInput" 
+                       placeholder="Enter the transaction hash (0x...)" required>
+                <button type="submit" class="verify-btn">
+                    <i class="fas fa-shield-alt"></i> Verify Certificate
+                </button>
+            </div>
+        </form>
+        
+        <div class="instructions">
+            <div class="alert alert-info mt-4" role="alert">
+                <i class="fas fa-info-circle mr-2"></i>
+                <span>The transaction hash can be found on your certificate or in the exam completion email.</span>
+            </div>
+        </div>
+    </div>
+    {% elif tx_hash and not is_verified %}
+    <!-- Attractively styled error message -->
+    <div class="verify-form">
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            <span>{{ error|default("Certificate verification failed. Please check the transaction hash and try again.") }}</span>
+        </div>
+        
+        <p>The transaction hash you provided <code>{{ tx_hash }}</code> could not be verified.</p>
+        
+        <div class="mt-4">
+            <a href="{{ url_for('verify_certificate') }}" class="btn btn-primary">
+                <i class="fas fa-arrow-left mr-2"></i> Try Again
+            </a>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if is_verified %}
+    <!-- Enhanced verification success display -->
+    <div class="text-center mb-4">
+        <div class="verification-status-badge verified">
+            <i class="fas fa-check"></i> Certificate Verified on Blockchain
+        </div>
+    </div>
+
+    <!-- Beautiful action buttons -->
+    <div class="certificate-actions no-print">
+        <button class="action-btn btn-download" id="downloadCertBtn">
+            <i class="fas fa-file-pdf"></i> Download PDF
+        </button>
+        <button class="action-btn btn-print" id="printCertBtn">
+            <i class="fas fa-print"></i> Print Certificate
+        </button>
+        <button class="action-btn btn-share" id="shareCertBtn">
+            <i class="fas fa-share-alt"></i> Share Certificate
+        </button>
+    </div>
+
+    <!-- Enhanced certificate with professional design -->
+    <div class="certificate-container" id="certificateContainer">
+        <div class="certificate-inner">
+            <div class="watermark">
+                <i class="fas fa-shield-alt"></i>
+            </div>
+            
+            <div class="certificate-content">
+                <div class="certificate-header">
+                    <div class="certificate-logo">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h2 class="certificate-title">Certificate of Achievement</h2>
+                    <p class="certificate-subtitle">This is to certify that</p>
+                </div>
+                
+                <div class="certificate-name">{{ student.username }}</div>
+                <div class="certificate-text">
+                    has successfully completed the online examination <strong>"{{ exam.name }}"</strong>
+                    with a score of <strong>{{ result.score }}%</strong>
+                </div>
+
+                <div class="certificate-details">
+                    <div class="detail-item">
+                        <div class="detail-label">Examination</div>
+                        <div class="detail-value">{{ exam.name }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Score</div>
+                        <div class="detail-value">{{ result.score }}%</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Registration ID</div>
+                        <div class="detail-value">{{ student.aadhaar_number or 'N/A' }}</div>
+                    </div>
+                    <div class="detail-item">
+                        <div class="detail-label">Completion Date</div>
+                        <div class="detail-value">{{ result.submitted_at.strftime('%d %B, %Y') }}</div>
+                    </div>
+                </div>
+
+                <!-- Improved QR code section -->
+                <div class="qr-code"

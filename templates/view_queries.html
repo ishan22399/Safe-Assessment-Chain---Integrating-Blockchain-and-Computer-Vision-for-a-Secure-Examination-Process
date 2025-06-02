@@ -1,29 +1,700 @@
 {% extends "base.html" %}
 {% block title %}View Queries{% endblock %}
 {% block content %}
-<h2>Student Queries</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Student</th>
-            <th>Query</th>
-            <th>Response</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for query in queries %}
-        <tr>
-            <td>{{ query.student.username }}</td>
-            <td>{{ query.message }}</td>
-            <td>
-                <form method="POST" action="{{ url_for('view_queries') }}">
-                    <input type="hidden" name="query_id" value="{{ query.id }}">
-                    <textarea class="form-control" name="response" required>{{ query.response }}</textarea>
-                    <button type="submit" class="btn btn-success mt-2">Respond</button>
-                </form>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+<style>
+    .queries-container {
+        animation: fadeIn 0.6s ease-in-out;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+        position: relative;
+        padding-left: 15px;
+    }
+
+    .page-title::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 10%;
+        height: 80%;
+        width: 5px;
+        background: linear-gradient(to bottom, #4776E6, #8E54E9);
+        border-radius: 5px;
+    }
+
+    .stats-summary {
+        display: flex;
+        gap: 20px;
+    }
+
+    .stat-item {
+        background: white;
+        border-radius: 10px;
+        padding: 12px 20px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .stat-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+
+    .total-icon {
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        color: white;
+    }
+
+    .pending-icon {
+        background: linear-gradient(135deg, #FF9966, #FF5E62);
+        color: white;
+    }
+
+    .resolved-icon {
+        background: linear-gradient(135deg, #56ab2f, #a8e063);
+        color: white;
+    }
+
+    .stat-content {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .stat-label {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    /* Filter controls */
+    .filter-controls {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
+    }
+
+    .search-box {
+        flex: 1;
+        min-width: 250px;
+        position: relative;
+    }
+
+    .search-input {
+        width: 100%;
+        padding: 12px 20px 12px 45px;
+        border: 1px solid #e0e0f0;
+        border-radius: 8px;
+        background-color: white;
+        transition: all 0.3s;
+    }
+
+    .search-input:focus {
+        outline: none;
+        border-color: #4776E6;
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+    }
+
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #aaa;
+    }
+
+    .filter-dropdown {
+        background: white;
+        border: 1px solid #e0e0f0;
+        border-radius: 8px;
+        padding: 10px 15px;
+        min-width: 150px;
+        transition: all 0.3s;
+    }
+
+    .filter-dropdown:focus {
+        outline: none;
+        border-color: #4776E6;
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+    }
+
+    /* Queries Cards */
+    .queries-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 25px;
+    }
+
+    .query-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        transition: all 0.3s;
+    }
+
+    .query-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .query-header {
+        padding: 18px 20px;
+        border-bottom: 1px solid #f0f0f8;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(90deg, #f8f9fa, #f1f3f9);
+    }
+
+    .student-info {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    .student-avatar {
+        width: 40px;
+        height: 40px;
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        border-radius: 50%;
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 1.2rem;
+    }
+
+    .student-details {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: #333;
+        font-size: 1rem;
+    }
+
+    .query-date {
+        font-size: 0.85rem;
+        color: #999;
+    }
+
+    .query-status {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-pending {
+        background-color: rgba(255, 159, 102, 0.1);
+        color: #ff9f66;
+    }
+
+    .status-resolved {
+        background-color: rgba(86, 171, 47, 0.1);
+        color: #56ab2f;
+    }
+
+    .query-content {
+        padding: 20px;
+    }
+
+    .query-message {
+        background-color: #f9f9ff;
+        padding: 15px;
+        border-radius: 8px;
+        color: #333;
+        margin-bottom: 20px;
+        border-left: 4px solid #4776E6;
+    }
+
+    .response-form {
+        position: relative;
+    }
+
+    .response-label {
+        display: block;
+        font-weight: 600;
+        color: #555;
+        margin-bottom: 10px;
+        font-size: 0.95rem;
+    }
+
+    .response-textarea {
+        width: 100%;
+        padding: 15px;
+        border: 1px solid #e0e0f0;
+        border-radius: 8px;
+        background-color: #fcfcff;
+        transition: all 0.3s;
+        min-height: 120px;
+        resize: vertical;
+    }
+
+    .response-textarea:focus {
+        outline: none;
+        border-color: #4776E6;
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+    }
+
+    .btn-respond {
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-top: 15px;
+    }
+
+    .btn-respond:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(71, 118, 230, 0.2);
+    }
+
+    .existing-response {
+        background-color: rgba(86, 171, 47, 0.05);
+        padding: 15px;
+        border-radius: 8px;
+        color: #333;
+        margin-bottom: 15px;
+        border-left: 4px solid #56ab2f;
+    }
+
+    .response-header {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 10px;
+    }
+
+    .response-title {
+        font-weight: 600;
+        color: #56ab2f;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 0.95rem;
+    }
+
+    .response-edit {
+        color: #4776E6;
+        font-size: 0.85rem;
+        cursor: pointer;
+        font-weight: 600;
+    }
+
+    /* Empty state */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        grid-column: 1 / -1;
+    }
+
+    .empty-state-icon {
+        font-size: 4rem;
+        color: #e0e0e0;
+        margin-bottom: 20px;
+    }
+
+    .empty-state-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .empty-state-message {
+        color: #666;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+    
+    /* List view toggle */
+    .view-toggle {
+        background-color: #f8f9fa;
+        border-radius: 8px;
+        padding: 5px;
+        display: inline-flex;
+    }
+    
+    .toggle-option {
+        padding: 6px 12px;
+        cursor: pointer;
+        border-radius: 6px;
+        color: #666;
+        transition: all 0.3s;
+    }
+    
+    .toggle-option.active {
+        background-color: white;
+        color: #4776E6;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    /* Table View */
+    .queries-table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 30px;
+        display: none;
+    }
+    
+    .queries-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .queries-table th {
+        background: linear-gradient(90deg, #f8f9fa, #f1f3f9);
+        padding: 15px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 1px solid #eaeaea;
+    }
+    
+    .queries-table td {
+        padding: 12px 20px;
+        border-bottom: 1px solid #eaeaea;
+        vertical-align: middle;
+    }
+    
+    .queries-table tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .queries-table tbody tr {
+        transition: all 0.2s;
+    }
+    
+    .queries-table tbody tr:hover {
+        background-color: rgba(71, 118, 230, 0.03);
+    }
+</style>
+
+<!-- Include FontAwesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="queries-container">
+    <div class="page-header">
+        <h2 class="page-title">Student Queries</h2>
+        
+        <div class="stats-summary">
+            <div class="stat-item">
+                <div class="stat-icon total-icon">
+                    <i class="fas fa-comments"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value">{{ queries|length }}</div>
+                    <div class="stat-label">Total Queries</div>
+                </div>
+            </div>
+            
+            <div class="stat-item">
+                <div class="stat-icon pending-icon">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="pending-count">-</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+            
+            <div class="stat-item">
+                <div class="stat-icon resolved-icon">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-content">
+                    <div class="stat-value" id="resolved-count">-</div>
+                    <div class="stat-label">Resolved</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="filter-controls">
+        <div class="search-box">
+            <input type="text" class="search-input" placeholder="Search by student name or query content..." id="searchInput">
+            <i class="fas fa-search search-icon"></i>
+        </div>
+        
+        <select class="filter-dropdown" id="statusFilter">
+            <option value="all">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="resolved">Resolved</option>
+        </select>
+        
+        <div class="view-toggle">
+            <div class="toggle-option active" data-view="card">
+                <i class="fas fa-th-large"></i>
+            </div>
+            <div class="toggle-option" data-view="table">
+                <i class="fas fa-list"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card View -->
+    <div class="queries-list" id="cardView">
+        {% if queries %}
+            {% for query in queries %}
+            <div class="query-card" data-status="{{ 'pending' if not query.response else 'resolved' }}">
+                <div class="query-header">
+                    <div class="student-info">
+                        <div class="student-avatar">
+                            {{ query.student.username[0]|upper }}
+                        </div>
+                        <div class="student-details">
+                            <div class="student-name">{{ query.student.username }}</div>
+                            <div class="query-date">{{ query.timestamp|default('Today', true) }}</div>
+                        </div>
+                    </div>
+                    <div class="query-status {{ 'status-pending' if not query.response else 'status-resolved' }}">
+                        {{ 'Pending' if not query.response else 'Resolved' }}
+                    </div>
+                </div>
+                
+                <div class="query-content">
+                    <div class="query-message">{{ query.message }}</div>
+                    
+                    {% if query.response %}
+                    <div class="existing-response">
+                        <div class="response-header">
+                            <div class="response-title">
+                                <i class="fas fa-check-circle"></i> Your Response
+                            </div>
+                            <div class="response-edit" data-query="{{ query.id }}">
+                                <i class="fas fa-edit"></i> Edit
+                            </div>
+                        </div>
+                        <div>{{ query.response }}</div>
+                    </div>
+                    {% endif %}
+                    
+                    <form method="POST" action="{{ url_for('view_queries') }}" class="response-form {{ 'hidden' if query.response }}">
+                        <input type="hidden" name="query_id" value="{{ query.id }}">
+                        <label for="response-{{ query.id }}" class="response-label">Your Response</label>
+                        <textarea class="response-textarea" id="response-{{ query.id }}" name="response" required>{{ query.response }}</textarea>
+                        <button type="submit" class="btn-respond">
+                            <i class="fas fa-reply"></i> {{ 'Update Response' if query.response else 'Respond' }}
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        {% else %}
+            <div class="empty-state">
+                <div class="empty-state-icon">
+                    <i class="fas fa-inbox"></i>
+                </div>
+                <h3 class="empty-state-title">No Queries Yet</h3>
+                <p class="empty-state-message">There are no student queries at the moment. When students submit queries, they will appear here.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Table View -->
+    <div class="queries-table-container" id="tableView">
+        <table class="queries-table">
+            <thead>
+                <tr>
+                    <th>Student</th>
+                    <th>Query</th>
+                    <th>Status</th>
+                    <th>Response</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for query in queries %}
+                <tr data-status="{{ 'pending' if not query.response else 'resolved' }}">
+                    <td width="15%">
+                        <div class="student-info">
+                            <div class="student-avatar" style="width: 30px; height: 30px; font-size: 0.9rem;">
+                                {{ query.student.username[0]|upper }}
+                            </div>
+                            <div class="student-details" style="margin-left: 8px;">
+                                <div class="student-name">{{ query.student.username }}</div>
+                            </div>
+                        </div>
+                    </td>
+                    <td width="30%">{{ query.message }}</td>
+                    <td width="15%">
+                        <div class="query-status {{ 'status-pending' if not query.response else 'status-resolved' }}" style="font-size: 0.7rem;">
+                            {{ 'Pending' if not query.response else 'Resolved' }}
+                        </div>
+                    </td>
+                    <td width="40%">
+                        <form method="POST" action="{{ url_for('view_queries') }}" class="response-form" style="margin-bottom: 0;">
+                            <input type="hidden" name="query_id" value="{{ query.id }}">
+                            <textarea class="response-textarea" name="response" required style="min-height: 80px;">{{ query.response }}</textarea>
+                            <button type="submit" class="btn-respond" style="padding: 6px 12px; font-size: 0.8rem;">
+                                <i class="fas fa-reply"></i> {{ 'Update' if query.response else 'Respond' }}
+                            </button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Count pending and resolved queries
+        let pendingCount = 0;
+        let resolvedCount = 0;
+        
+        document.querySelectorAll('.query-card').forEach(card => {
+            const status = card.getAttribute('data-status');
+            if (status === 'pending') {
+                pendingCount++;
+            } else if (status === 'resolved') {
+                resolvedCount++;
+            }
+        });
+        
+        document.getElementById('pending-count').textContent = pendingCount;
+        document.getElementById('resolved-count').textContent = resolvedCount;
+        
+        // Edit response functionality
+        document.querySelectorAll('.response-edit').forEach(edit => {
+            edit.addEventListener('click', function() {
+                const queryId = this.getAttribute('data-query');
+                const responseForm = this.closest('.query-content').querySelector('.response-form');
+                const existingResponse = this.closest('.existing-response');
+                
+                responseForm.classList.remove('hidden');
+                responseForm.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                responseForm.querySelector('.response-textarea').focus();
+                
+                if (existingResponse) {
+                    existingResponse.style.display = 'none';
+                }
+            });
+        });
+        
+        // Search functionality
+        const searchInput = document.getElementById('searchInput');
+        searchInput.addEventListener('input', filterQueries);
+        
+        // Status filter
+        const statusFilter = document.getElementById('statusFilter');
+        statusFilter.addEventListener('change', filterQueries);
+        
+        function filterQueries() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const status = statusFilter.value;
+            
+            document.querySelectorAll('.query-card').forEach(card => {
+                const studentName = card.querySelector('.student-name').textContent.toLowerCase();
+                const queryMessage = card.querySelector('.query-message').textContent.toLowerCase();
+                const cardStatus = card.getAttribute('data-status');
+                
+                const matchesSearch = studentName.includes(searchTerm) || queryMessage.includes(searchTerm);
+                const matchesStatus = status === 'all' || cardStatus === status;
+                
+                card.style.display = (matchesSearch && matchesStatus) ? 'block' : 'none';
+            });
+            
+            document.querySelectorAll('.queries-table tbody tr').forEach(row => {
+                const studentName = row.querySelector('.student-name').textContent.toLowerCase();
+                const queryMessage = row.cells[1].textContent.toLowerCase();
+                const rowStatus = row.getAttribute('data-status');
+                
+                const matchesSearch = studentName.includes(searchTerm) || queryMessage.includes(searchTerm);
+                const matchesStatus = status === 'all' || rowStatus === status;
+                
+                row.style.display = (matchesSearch && matchesStatus) ? '' : 'none';
+            });
+        }
+        
+        // View toggle
+        const toggleOptions = document.querySelectorAll('.toggle-option');
+        const cardView = document.getElementById('cardView');
+        const tableView = document.getElementById('tableView');
+        
+        toggleOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                toggleOptions.forEach(opt => opt.classList.remove('active'));
+                this.classList.add('active');
+                
+                const viewType = this.getAttribute('data-view');
+                if (viewType === 'card') {
+                    cardView.style.display = 'grid';
+                    tableView.style.display = 'none';
+                } else {
+                    cardView.style.display = 'none';
+                    tableView.style.display = 'block';
+                }
+            });
+        });
+        
+        // Hide forms for resolved queries by default
+        document.querySelectorAll('.query-card').forEach(card => {
+            if (card.getAttribute('data-status') === 'resolved') {
+                const form = card.querySelector('.response-form');
+                if (form) {
+                    form.classList.add('hidden');
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .hidden {
+        display: none;
+    }
+</style>
 {% endblock %}

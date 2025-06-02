@@ -1,0 +1,610 @@
+{% extends "base.html" %}
+{% block title %}Manage Questions{% endblock %}
+{% block content %}
+<style>
+    .questions-container {
+        animation: fadeIn 0.6s ease-in-out;
+    }
+    
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(0,0,0,0.08);
+    }
+    
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+        position: relative;
+        padding-left: 15px;
+    }
+    
+    .page-title::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 10%;
+        height: 80%;
+        width: 5px;
+        background: linear-gradient(to bottom, #4776E6, #8E54E9);
+        border-radius: 5px;
+    }
+    
+    .exam-name {
+        color: #4776E6;
+        font-weight: 600;
+    }
+    
+    .questions-stats {
+        font-size: 0.9rem;
+        color: #666;
+        display: flex;
+        align-items: center;
+    }
+    
+    .questions-stats i {
+        color: #4776E6;
+        margin-right: 6px;
+    }
+    
+    .sections-container {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+    
+    @media (min-width: 992px) {
+        .sections-container {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+    
+    .section-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        height: fit-content;
+    }
+    
+    .section-header {
+        background: linear-gradient(90deg, #f8f9fa, #f1f3f9);
+        padding: 20px 25px;
+        border-bottom: 1px solid #eaeaea;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+    
+    .section-title {
+        margin: 0;
+        color: #333;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+    
+    .section-title i {
+        margin-right: 10px;
+        color: #4776E6;
+        font-size: 1.1rem;
+    }
+    
+    .section-body {
+        padding: 25px;
+    }
+    
+    /* Form Styling */
+    .form-group {
+        margin-bottom: 20px;
+    }
+    
+    .form-label {
+        font-weight: 500;
+        color: #444;
+        margin-bottom: 8px;
+        display: block;
+    }
+    
+    .form-control, .form-select {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #e0e0f0;
+        border-radius: 8px;
+        background-color: #fcfcff;
+        transition: all 0.3s;
+        font-size: 1rem;
+    }
+    
+    .form-control:focus, .form-select:focus {
+        outline: none;
+        border-color: #4776E6;
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+        background-color: #fff;
+    }
+    
+    .input-icon-wrapper {
+        position: relative;
+    }
+    
+    .input-icon {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        left: 15px;
+        color: #aaa;
+        transition: all 0.3s;
+    }
+    
+    .icon-input {
+        padding-left: 45px;
+    }
+    
+    .icon-input:focus + .input-icon {
+        color: #4776E6;
+    }
+    
+    .option-group {
+        position: relative;
+        margin-bottom: 15px;
+        animation: slideIn 0.4s ease forwards;
+        opacity: 0;
+    }
+    
+    @keyframes slideIn {
+        to { opacity: 1; transform: translateX(0); }
+    }
+    
+    .option-group:nth-child(1) { animation-delay: 0.1s; transform: translateX(-10px); }
+    .option-group:nth-child(2) { animation-delay: 0.2s; transform: translateX(-10px); }
+    .option-group:nth-child(3) { animation-delay: 0.3s; transform: translateX(-10px); }
+    .option-group:nth-child(4) { animation-delay: 0.4s; transform: translateX(-10px); }
+    
+    .option-label {
+        position: absolute;
+        top: -10px;
+        left: 15px;
+        background-color: #fcfcff;
+        padding: 0 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: #666;
+        z-index: 1;
+    }
+    
+    .option-input {
+        border: 1px solid #e0e0f0;
+        border-radius: 8px;
+        padding: 15px 15px 12px;
+        width: 100%;
+        transition: all 0.3s;
+    }
+    
+    .option-input:focus {
+        outline: none;
+        border-color: #4776E6;
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+    }
+    
+    .option-bullet {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        color: white;
+        font-weight: 600;
+        text-align: center;
+        line-height: 24px;
+        margin-right: 8px;
+    }
+    
+    .option-1 .option-bullet { background: #4776E6; }
+    .option-2 .option-bullet { background: #8E54E9; }
+    .option-3 .option-bullet { background: #43b794; }
+    .option-4 .option-bullet { background: #f7b731; }
+    
+    .correct-answer-select {
+        position: relative;
+    }
+    
+    .btn-add-question {
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        box-shadow: 0 5px 15px rgba(71, 118, 230, 0.2);
+    }
+    
+    .btn-add-question:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(71, 118, 230, 0.3);
+    }
+    
+    .btn-add-question:active {
+        transform: translateY(-1px);
+    }
+    
+    /* Questions Table Styling */
+    .questions-table-container {
+        overflow-x: auto;
+    }
+    
+    .questions-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+    
+    .questions-table th {
+        background-color: #f8f9fa;
+        color: #555;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        padding: 14px 16px;
+        border-bottom: 1px solid #eaeaea;
+        text-align: left;
+    }
+    
+    .questions-table td {
+        padding: 16px;
+        border-bottom: 1px solid #eaeaea;
+        vertical-align: top;
+    }
+    
+    .questions-table tbody tr {
+        transition: all 0.2s;
+    }
+    
+    .questions-table tbody tr:hover {
+        background-color: rgba(71, 118, 230, 0.03);
+    }
+    
+    .questions-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .question-text {
+        font-weight: 500;
+        color: #333;
+    }
+    
+    .options-list {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+    
+    .option-item {
+        margin-bottom: 6px;
+        display: flex;
+        align-items: center;
+    }
+    
+    .option-item.correct {
+        color: #43b794;
+        font-weight: 500;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 30px;
+        color: #888;
+    }
+    
+    .empty-icon {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #ddd;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-action {
+        padding: 6px 12px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .btn-edit {
+        background-color: #f1c40f;
+        color: #333;
+    }
+    
+    .btn-delete {
+        background-color: #e74c3c;
+        color: white;
+    }
+    
+    .badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+    }
+    
+    .badge-correct {
+        background-color: rgba(46, 204, 113, 0.15);
+        color: #2ecc71;
+    }
+    
+    @media (max-width: 768px) {
+        .questions-table th:nth-child(2),
+        .questions-table td:nth-child(2) {
+            display: none;
+        }
+    }
+</style>
+
+<!-- Include FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="questions-container">
+    <div class="page-header">
+        <h2 class="page-title">Manage Questions</h2>
+        <div class="questions-stats">
+            <i class="fas fa-question-circle"></i>
+            Total Questions: <strong>{{ mcqs|length }}</strong> for <span class="exam-name">{{ exam.name }}</span>
+        </div>
+    </div>
+    
+    <div class="sections-container">
+        <!-- Add Question Form -->
+        <div class="section-card">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-plus-circle"></i> Add New Question
+                </h3>
+            </div>
+            <div class="section-body">
+                <form action="{{ url_for('manage_questions', exam_id=exam.id) }}" method="POST" id="questionForm">
+                    <div class="form-group">
+                        <label for="question" class="form-label">Question</label>
+                        <div class="input-icon-wrapper">
+                            <input type="text" class="form-control icon-input" id="question" name="question" required placeholder="Enter question text">
+                            <i class="fas fa-question input-icon"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="options-container">
+                        <div class="option-group option-1">
+                            <span class="option-label"><span class="option-bullet">1</span> Option 1</span>
+                            <input type="text" class="option-input" id="option1" name="option1" required placeholder="Enter first option">
+                        </div>
+                        
+                        <div class="option-group option-2">
+                            <span class="option-label"><span class="option-bullet">2</span> Option 2</span>
+                            <input type="text" class="option-input" id="option2" name="option2" required placeholder="Enter second option">
+                        </div>
+                        
+                        <div class="option-group option-3">
+                            <span class="option-label"><span class="option-bullet">3</span> Option 3</span>
+                            <input type="text" class="option-input" id="option3" name="option3" required placeholder="Enter third option">
+                        </div>
+                        
+                        <div class="option-group option-4">
+                            <span class="option-label"><span class="option-bullet">4</span> Option 4</span>
+                            <input type="text" class="option-input" id="option4" name="option4" required placeholder="Enter fourth option">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="correct_answer" class="form-label">Correct Answer</label>
+                        <div class="correct-answer-select">
+                            <select class="form-select" id="correct_answer" name="correct_answer" required>
+                                <option value="" disabled selected>Select the correct answer</option>
+                                <option value="option1">Option 1</option>
+                                <option value="option2">Option 2</option>
+                                <option value="option3">Option 3</option>
+                                <option value="option4">Option 4</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-add-question">
+                        <i class="fas fa-plus"></i> Add Question
+                    </button>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Existing Questions -->
+        <div class="section-card">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-list-ul"></i> Existing Questions
+                </h3>
+            </div>
+            <div class="section-body">
+                {% if mcqs %}
+                <div class="questions-table-container">
+                    <table class="questions-table">
+                        <thead>
+                            <tr>
+                                <th>Question</th>
+                                <th>Options</th>
+                                <th>Answer</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for mcq in mcqs %}
+                            <tr>
+                                <td>
+                                    <div class="question-text">{{ mcq.question }}</div>
+                                </td>
+                                <td>
+                                    <ul class="options-list">
+                                        <li class="option-item {% if mcq.correct_answer == 'option1' %}correct{% endif %}">
+                                            <span class="option-bullet">1</span> {{ mcq.option1 }}
+                                            {% if mcq.correct_answer == 'option1' %} 
+                                                <i class="fas fa-check-circle" style="margin-left: 5px;"></i>
+                                            {% endif %}
+                                        </li>
+                                        <li class="option-item {% if mcq.correct_answer == 'option2' %}correct{% endif %}">
+                                            <span class="option-bullet">2</span> {{ mcq.option2 }}
+                                            {% if mcq.correct_answer == 'option2' %} 
+                                                <i class="fas fa-check-circle" style="margin-left: 5px;"></i>
+                                            {% endif %}
+                                        </li>
+                                        <li class="option-item {% if mcq.correct_answer == 'option3' %}correct{% endif %}">
+                                            <span class="option-bullet">3</span> {{ mcq.option3 }}
+                                            {% if mcq.correct_answer == 'option3' %} 
+                                                <i class="fas fa-check-circle" style="margin-left: 5px;"></i>
+                                            {% endif %}
+                                        </li>
+                                        <li class="option-item {% if mcq.correct_answer == 'option4' %}correct{% endif %}">
+                                            <span class="option-bullet">4</span> {{ mcq.option4 }}
+                                            {% if mcq.correct_answer == 'option4' %} 
+                                                <i class="fas fa-check-circle" style="margin-left: 5px;"></i>
+                                            {% endif %}
+                                        </li>
+                                    </ul>
+                                </td>
+                                <td>
+                                    <span class="badge badge-correct">
+                                        {{ mcq.correct_answer|replace('option', 'Option ') }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="action-buttons">
+                                        <button class="btn-action btn-edit" title="Edit Question">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn-action btn-delete" title="Delete Question">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-clipboard-list empty-icon"></i>
+                    <p>No questions added yet. Create your first question using the form.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Highlight form fields on focus
+        const formInputs = document.querySelectorAll('.form-control, .form-select, .option-input');
+        
+        formInputs.forEach(input => {
+            input.addEventListener('focus', function() {
+                this.closest('.form-group')?.classList.add('focused');
+            });
+            
+            input.addEventListener('blur', function() {
+                this.closest('.form-group')?.classList.remove('focused');
+            });
+        });
+        
+        // Preview correct answer selection
+        const correctAnswerSelect = document.getElementById('correct_answer');
+        const optionInputs = document.querySelectorAll('.option-input');
+        
+        correctAnswerSelect.addEventListener('change', function() {
+            const selectedValue = this.value;
+            
+            optionInputs.forEach((input, index) => {
+                const option = 'option' + (index + 1);
+                input.classList.toggle('correct-highlight', selectedValue === option);
+            });
+        });
+        
+        // Form validation
+        const questionForm = document.getElementById('questionForm');
+        questionForm.addEventListener('submit', function(e) {
+            let isValid = true;
+            
+            // Check if all fields are filled
+            formInputs.forEach(input => {
+                if (!input.value.trim()) {
+                    isValid = false;
+                    input.classList.add('invalid');
+                    
+                    // Add shake animation
+                    input.classList.add('shake');
+                    setTimeout(() => {
+                        input.classList.remove('shake');
+                    }, 500);
+                } else {
+                    input.classList.remove('invalid');
+                }
+            });
+            
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+        
+        // Add validation style
+        document.head.insertAdjacentHTML('beforeend', `
+            <style>
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    20%, 60% { transform: translateX(-5px); }
+                    40%, 80% { transform: translateX(5px); }
+                }
+                
+                .shake {
+                    animation: shake 0.5s ease-in-out;
+                    border-color: #ff6b6b !important;
+                }
+                
+                .invalid {
+                    border-color: #ff6b6b !important;
+                }
+                
+                .correct-highlight {
+                    border-color: #2ecc71 !important;
+                    background-color: rgba(46, 204, 113, 0.05);
+                }
+                
+                .focused {
+                    transform: translateY(-2px);
+                    transition: transform 0.3s;
+                }
+            </style>
+        `);
+    });
+</script>
+{% endblock %}

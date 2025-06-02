@@ -1,8 +1,8 @@
 {% extends "base.html" %}
-{% block title %}Add Exam{% endblock %}
+{% block title %}Edit Exam{% endblock %}
 {% block content %}
 <style>
-    .exam-form-container {
+    .edit-form-container {
         max-width: 800px;
         margin: 30px auto 50px;
         padding: 0;
@@ -20,7 +20,7 @@
     }
     
     .form-header {
-        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        background: linear-gradient(135deg, #3a7bd5, #00d2ff);
         padding: 30px 40px;
         color: white;
         position: relative;
@@ -33,6 +33,13 @@
         font-size: 1.8rem;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         position: relative;
+        display: flex;
+        align-items: center;
+    }
+    
+    .form-header h2 i {
+        margin-right: 15px;
+        font-size: 1.5rem;
     }
     
     .form-header::before {
@@ -69,7 +76,7 @@
     .section-title {
         font-size: 1.1rem;
         font-weight: 600;
-        color: #4776E6;
+        color: #3a7bd5;
         margin-bottom: 20px;
         display: flex;
         align-items: center;
@@ -81,7 +88,7 @@
         width: 18px;
         height: 18px;
         margin-right: 10px;
-        background-color: #4776E6;
+        background-color: #3a7bd5;
         mask-size: contain;
         mask-repeat: no-repeat;
         mask-position: center;
@@ -97,7 +104,7 @@
     }
     
     .section-title.scheduling::before {
-        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z'/%3E%3C/svg%3E");
+        mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59-8-8-8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z'/%3E%3C/svg%3E");
     }
 
     .form-row {
@@ -130,8 +137,8 @@
     }
     
     .form-control:focus {
-        border-color: #4776E6;
-        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+        border-color: #3a7bd5;
+        box-shadow: 0 0 0 3px rgba(58, 123, 213, 0.15);
         background-color: #fff;
         transform: translateY(-2px);
         outline: none;
@@ -153,7 +160,7 @@
         left: 0;
         height: 2px;
         width: 0;
-        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        background: linear-gradient(90deg, #3a7bd5, #00d2ff);
         transition: width 0.4s;
         border-radius: 2px;
     }
@@ -168,40 +175,52 @@
         margin-top: 5px;
     }
     
+    .btn-container {
+        display: flex;
+        justify-content: space-between;
+        margin-top: 30px;
+    }
+    
     .btn-submit {
-        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        background: linear-gradient(90deg, #3a7bd5, #00d2ff);
         border: none;
         padding: 14px 30px;
         font-weight: 600;
         letter-spacing: 1px;
         border-radius: 8px;
-        box-shadow: 0 5px 15px rgba(71, 118, 230, 0.2);
+        box-shadow: 0 5px 15px rgba(58, 123, 213, 0.2);
         transition: all 0.3s;
         color: white;
-        float: right;
         cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 10px;
     }
     
     .btn-submit:hover {
         transform: translateY(-3px);
-        box-shadow: 0 8px 20px rgba(71, 118, 230, 0.3);
+        box-shadow: 0 8px 20px rgba(58, 123, 213, 0.3);
     }
     
     .btn-submit:active {
         transform: translateY(-1px);
     }
     
-    /* Floating label effect */
-    .float-label {
-        position: relative;
+    .btn-cancel {
+        background: #f8f9fa;
+        border: 1px solid #e0e0f0;
+        color: #444;
+        padding: 14px 25px;
+        font-weight: 500;
+        border-radius: 8px;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
     
-    .float-label input:focus ~ label,
-    .float-label input:not(:placeholder-shown) ~ label,
-    .float-label textarea:focus ~ label,
-    .float-label textarea:not(:placeholder-shown) ~ label {
-        transform: translateY(-25px) scale(0.85);
-        color: #4776E6;
+    .btn-cancel:hover {
+        background: #e9ecef;
     }
     
     .required-field::after {
@@ -209,15 +228,55 @@
         color: #ff6b6b;
         margin-left: 4px;
     }
+    
+    .form-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 15px;
+        color: #fff;
+        background: #3a7bd5;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-left: 10px;
+    }
+    
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        margin-bottom: 15px;
+        color: #666;
+    }
+    
+    .status-indicator i {
+        color: #3a7bd5;
+        margin-right: 8px;
+    }
+    
+    .status-value {
+        font-weight: 600;
+        color: #333;
+        margin-left: 5px;
+    }
 </style>
 
-<div class="exam-form-container">
+<!-- Include FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="edit-form-container">
     <div class="form-header">
-        <h2>Create New Exam</h2>
+        <h2><i class="fas fa-edit"></i> Edit Exam <span class="form-badge">Editing</span></h2>
     </div>
     
     <div class="form-body">
-        <form method="POST" action="{{ url_for('add_exam') }}" id="examForm">
+        <!-- Status information section -->
+        <div class="status-indicator">
+            <i class="fas fa-info-circle"></i>
+            Editing exam ID: <span class="status-value">{{ exam.id }}</span>
+        </div>
+        
+        <form action="{{ url_for('edit_exam', exam_id=exam.id) }}" method="POST" id="examForm">
             <!-- Basic Exam Information -->
             <div class="form-section" style="animation-delay: 0.1s;">
                 <h3 class="section-title basics">Basic Information</h3>
@@ -226,7 +285,7 @@
                     <div class="form-col">
                         <label for="name" class="form-label required-field">Exam Name</label>
                         <div class="input-wrapper">
-                            <input type="text" class="form-control" id="name" name="name" required placeholder="Enter exam title">
+                            <input type="text" class="form-control" id="name" name="name" value="{{ exam.name }}" required>
                             <div class="input-animation"></div>
                         </div>
                         <div class="form-hint">Choose a clear and descriptive name</div>
@@ -237,8 +296,7 @@
                     <div class="form-col">
                         <label for="description" class="form-label">Description</label>
                         <div class="input-wrapper">
-                            <textarea class="form-control" id="description" name="description" 
-                                      placeholder="Provide details about the exam contents, purpose, and any special instructions"></textarea>
+                            <textarea class="form-control" id="description" name="description" required>{{ exam.description }}</textarea>
                             <div class="input-animation"></div>
                         </div>
                     </div>
@@ -253,7 +311,7 @@
                     <div class="form-col">
                         <label for="age_min" class="form-label required-field">Minimum Age</label>
                         <div class="input-wrapper">
-                            <input type="number" class="form-control" id="age_min" name="age_min" required min="0" placeholder="e.g. 18">
+                            <input type="number" class="form-control" id="age_min" name="age_min" value="{{ exam.age_min }}" required>
                             <div class="input-animation"></div>
                         </div>
                     </div>
@@ -261,7 +319,7 @@
                     <div class="form-col">
                         <label for="age_max" class="form-label required-field">Maximum Age</label>
                         <div class="input-wrapper">
-                            <input type="number" class="form-control" id="age_max" name="age_max" required min="0" placeholder="e.g. 30">
+                            <input type="number" class="form-control" id="age_max" name="age_max" value="{{ exam.age_max }}" required>
                             <div class="input-animation"></div>
                         </div>
                     </div>
@@ -271,8 +329,7 @@
                     <div class="form-col">
                         <label for="education_level" class="form-label required-field">Education Level</label>
                         <div class="input-wrapper">
-                            <input type="text" class="form-control" id="education_level" name="education_level" 
-                                   required placeholder="e.g. Graduate, Post Graduate">
+                            <input type="text" class="form-control" id="education_level" name="education_level" value="{{ exam.education_level }}" required>
                             <div class="input-animation"></div>
                         </div>
                         <div class="form-hint">Minimum education qualification required</div>
@@ -283,11 +340,10 @@
                     <div class="form-col">
                         <label for="eligible_colleges" class="form-label">Eligible Colleges</label>
                         <div class="input-wrapper">
-                            <textarea class="form-control" id="eligible_colleges" name="eligible_colleges" 
-                                      placeholder="Enter college names separated by commas"></textarea>
+                            <input type="text" class="form-control" id="eligible_colleges" name="eligible_colleges" value="{{ exam.eligible_colleges }}">
                             <div class="input-animation"></div>
                         </div>
-                        <div class="form-hint">Leave empty if open for all institutions</div>
+                        <div class="form-hint">Enter college names separated by commas</div>
                     </div>
                 </div>
             </div>
@@ -300,7 +356,7 @@
                     <div class="form-col">
                         <label for="date" class="form-label required-field">Exam Date</label>
                         <div class="input-wrapper">
-                            <input type="date" class="form-control" id="date" name="date" required>
+                            <input type="date" class="form-control" id="date" name="date" value="{{ exam.date }}" required>
                             <div class="input-animation"></div>
                         </div>
                     </div>
@@ -308,8 +364,7 @@
                     <div class="form-col">
                         <label for="time_limit" class="form-label required-field">Time Limit (minutes)</label>
                         <div class="input-wrapper">
-                            <input type="number" class="form-control" id="time_limit" name="time_limit" min="1" 
-                                   required placeholder="e.g. 120">
+                            <input type="number" class="form-control" id="time_limit" name="time_limit" value="{{ exam.time_limit }}" required>
                             <div class="input-animation"></div>
                         </div>
                         <div class="form-hint">Duration in minutes</div>
@@ -317,8 +372,14 @@
                 </div>
             </div>
             
-            <button type="submit" class="btn-submit">Create Exam</button>
-            <div style="clear: both;"></div>
+            <div class="btn-container">
+                <a href="javascript:history.back()" class="btn-cancel">
+                    <i class="fas fa-arrow-left"></i> Cancel
+                </a>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Save Changes
+                </button>
+            </div>
         </form>
     </div>
 </div>
@@ -330,16 +391,32 @@
         
         inputs.forEach(input => {
             input.addEventListener('focus', function() {
-                const label = this.previousElementSibling?.previousElementSibling;
+                const label = this.closest('.input-wrapper').previousElementSibling;
                 if (label && label.classList.contains('form-label')) {
-                    label.style.color = '#4776E6';
+                    label.style.color = '#3a7bd5';
                 }
             });
             
             input.addEventListener('blur', function() {
-                const label = this.previousElementSibling?.previousElementSibling;
+                const label = this.closest('.input-wrapper').previousElementSibling;
                 if (label && label.classList.contains('form-label')) {
                     label.style.color = '#444';
+                }
+            });
+        });
+        
+        // Add original value highlight
+        inputs.forEach(input => {
+            // Store original value
+            const originalValue = input.value;
+            
+            input.addEventListener('input', function() {
+                if (this.value !== originalValue) {
+                    this.style.borderLeftColor = '#3a7bd5';
+                    this.style.borderLeftWidth = '3px';
+                } else {
+                    this.style.borderLeftColor = '';
+                    this.style.borderLeftWidth = '';
                 }
             });
         });
@@ -357,9 +434,9 @@
                         input.classList.remove('shake');
                     }, 500);
                     
-                    input.parentElement.style.borderColor = '#ff6b6b';
+                    input.style.borderColor = '#ff6b6b';
                     setTimeout(() => {
-                        input.parentElement.style.borderColor = '';
+                        input.style.borderColor = '';
                     }, 3000);
                 });
                 
@@ -378,7 +455,6 @@
                 
                 .shake {
                     animation: shake 0.5s ease-in-out;
-                    border-color: #ff6b6b !important;
                 }
             </style>
         `);

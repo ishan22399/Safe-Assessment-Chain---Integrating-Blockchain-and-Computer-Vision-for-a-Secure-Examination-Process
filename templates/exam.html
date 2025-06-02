@@ -1,15 +1,489 @@
 {% extends "base.html" %}
 {% block title %}MCQ Exam{% endblock %}
 {% block content %}
-<h2>MCQ Exam</h2>
-<form method="POST" action="{{ url_for('submit_exam') }}">
-    {% for mcq in mcqs %}
-        <p>{{ mcq.question }}</p>
-        <label><input type="radio" name="answer_{{ mcq.id }}" value="option1">{{ mcq.option1 }}</label>
-        <label><input type="radio" name="answer_{{ mcq.id }}" value="option2">{{ mcq.option2 }}</label>
-        <label><input type="radio" name="answer_{{ mcq.id }}" value="option3">{{ mcq.option3 }}</label>
-        <label><input type="radio" name="answer_{{ mcq.id }}" value="option4">{{ mcq.option4 }}</label>
-    {% endfor %}
-    <button type="submit">Submit</button>
-</form>
+<style>
+    .exam-container {
+        max-width: 900px;
+        margin: 30px auto;
+        animation: fadeIn 0.6s ease-in-out;
+        padding: 0 15px;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .exam-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        border-radius: 12px;
+        padding: 25px 30px;
+        color: white;
+        box-shadow: 0 5px 15px rgba(71, 118, 230, 0.2);
+        flex-wrap: wrap;
+        gap: 15px;
+    }
+    
+    @media (max-width: 576px) {
+        .exam-header {
+            padding: 20px;
+        }
+        
+        .exam-title {
+            font-size: 1.4rem;
+        }
+        
+        .question-text {
+            font-size: 1rem !important;
+        }
+        
+        .option-label {
+            padding: 10px 15px;
+        }
+    }
+
+    .option-input:focus + .option-indicator {
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.3);
+    }
+
+    .nav-dot:focus, 
+    .nav-button:focus, 
+    .btn-submit:focus, 
+    .btn-modal:focus {
+        outline: 3px solid rgba(71, 118, 230, 0.4);
+        outline-offset: 2px;
+    }
+
+    .save-indicator {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: rgba(46, 204, 113, 0.9);
+        color: white;
+        padding: 10px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        display: none;
+        z-index: 100;
+        animation: fadeInUp 0.3s ease-out;
+    }
+
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .exam-timer.warning {
+        background-color: rgba(255, 193, 7, 0.3);
+        animation: pulse 1s infinite;
+    }
+    
+    .exam-timer.danger {
+        background-color: rgba(220, 53, 69, 0.3);
+        animation: pulse 0.7s infinite;
+    }
+    
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+    }
+</style>
+
+<!-- Include FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="exam-container">
+    <div class="exam-header">
+        <div>
+            <h2 class="exam-title">Multiple Choice Exam</h2>
+            <div class="progress-container">
+                <div id="progress-bar" class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"></div>
+            </div>
+        </div>
+        <div class="exam-timer" id="exam-timer">
+            <i class="fas fa-stopwatch timer-icon"></i>
+            <span id="timer">00:00:00</span>
+        </div>
+    </div>
+    
+    <p class="answered-status">
+        Answered: <span id="answered-count" class="answered-count">0</span> / <span id="total-count">{{ mcqs|length }}</span>
+    </p>
+    
+    <form method="POST" action="{{ url_for('submit_exam') }}" id="examForm">
+        <div id="questions-container">
+            {% for mcq in mcqs %}
+            <div class="question-card" id="question-{{ loop.index }}" style="display: {{ 'block' if loop.index == 1 else 'none' }}; animation-delay: {{ loop.index * 0.1 }}s;" aria-labelledby="question-title-{{ loop.index }}">
+                <div class="question-header">
+                    <div class="question-number">{{ loop.index }}</div>
+                    <p class="question-text" id="question-title-{{ loop.index }}">{{ mcq.question }}</p>
+                </div>
+                <div class="question-body">
+                    <fieldset class="options-group">
+                        <legend class="sr-only">Options for question {{ loop.index }}</legend>
+                        <label class="option-label">
+                            <input type="radio" name="answer_{{ mcq.id }}" value="option1" class="option-input question-{{ loop.index }}-option">
+                            <div class="option-indicator"></div>
+                            <span class="option-text">{{ mcq.option1 }}</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="answer_{{ mcq.id }}" value="option2" class="option-input question-{{ loop.index }}-option">
+                            <div class="option-indicator"></div>
+                            <span class="option-text">{{ mcq.option2 }}</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="answer_{{ mcq.id }}" value="option3" class="option-input question-{{ loop.index }}-option">
+                            <div class="option-indicator"></div>
+                            <span class="option-text">{{ mcq.option3 }}</span>
+                        </label>
+                        <label class="option-label">
+                            <input type="radio" name="answer_{{ mcq.id }}" value="option4" class="option-input question-{{ loop.index }}-option">
+                            <div class="option-indicator"></div>
+                            <span class="option-text">{{ mcq.option4 }}</span>
+                        </label>
+                    </fieldset>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        
+        <div class="navigation-dots" id="navigation-dots" role="tablist">
+            {% for mcq in mcqs %}
+                <div class="nav-dot" data-question="{{ loop.index }}" title="Question {{ loop.index }}" tabindex="0" role="tab" aria-controls="question-{{ loop.index }}"></div>
+            {% endfor %}
+        </div>
+        
+        <div class="exam-navigation">
+            <button type="button" class="nav-button btn-prev" id="prevBtn" aria-label="Previous question">
+                <i class="fas fa-arrow-left"></i> Previous
+            </button>
+            <button type="button" class="nav-button btn-next" id="nextBtn" aria-label="Next question">
+                Next <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+        
+        <div class="submit-container">
+            <button type="button" class="btn-submit" id="submitBtn">
+                Submit Exam
+            </button>
+        </div>
+        
+        <input type="hidden" name="time_spent" id="time-spent" value="0">
+    </form>
+    
+    <div id="confirmModal" role="dialog" aria-labelledby="modalTitle" aria-describedby="modalDescription">
+        <div class="modal-content">
+            <h3 class="modal-title" id="modalTitle">Confirm Submission</h3>
+            <div class="modal-body">
+                <p id="modalDescription">Are you sure you want to submit your exam?</p>
+                <p id="unanswered-warning" style="color: #f39c12; font-weight: 500;"></p>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal btn-cancel" id="cancelSubmit">Cancel</button>
+                <button class="btn-modal btn-confirm" id="confirmSubmit">Submit</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="save-indicator" id="saveIndicator">
+        <i class="fas fa-check-circle"></i> Progress saved
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const totalQuestions = {{ mcqs|length }};
+        let currentQuestion = 1;
+        let answeredQuestions = 0;
+        const answeredStatus = {};
+        
+        let seconds = 0;
+        const timer = document.getElementById('timer');
+        const timerElement = document.getElementById('exam-timer');
+        const timeSpentInput = document.getElementById('time-spent');
+        
+        const timerInterval = setInterval(function() {
+            seconds++;
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            timer.textContent = 
+                (h < 10 ? '0' + h : h) + ':' +
+                (m < 10 ? '0' + m : m) + ':' +
+                (s < 10 ? '0' + s : s);
+                
+            timeSpentInput.value = seconds;
+            
+            if (seconds % 60 === 0) {
+                saveProgress();
+                showSaveIndicator();
+            }
+            
+            if (seconds === 2700) {
+                timerElement.classList.add('warning');
+            } else if (seconds === 3300) {
+                timerElement.classList.remove('warning');
+                timerElement.classList.add('danger');
+            }
+        }, 1000);
+        
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const navDots = document.querySelectorAll('.nav-dot');
+        const answeredCount = document.getElementById('answered-count');
+        const progressBar = document.getElementById('progress-bar');
+        
+        function showQuestion(questionNumber) {
+            document.querySelectorAll('.question-card').forEach(card => {
+                card.style.display = 'none';
+            });
+            
+            document.getElementById('question-' + questionNumber).style.display = 'block';
+            
+            document.querySelectorAll('.nav-dot').forEach(dot => {
+                dot.classList.remove('active');
+                dot.setAttribute('aria-selected', 'false');
+            });
+            document.querySelector(`.nav-dot[data-question="${questionNumber}"]`).classList.add('active');
+            document.querySelector(`.nav-dot[data-question="${questionNumber}"]`).setAttribute('aria-selected', 'true');
+            
+            prevBtn.disabled = questionNumber === 1;
+            if (questionNumber === 1) {
+                prevBtn.setAttribute('aria-disabled', 'true');
+            } else {
+                prevBtn.removeAttribute('aria-disabled');
+            }
+            
+            nextBtn.textContent = questionNumber === totalQuestions ? 'Review' : 'Next';
+            nextBtn.innerHTML = questionNumber === totalQuestions ? 'Review' : 'Next <i class="fas fa-arrow-right"></i>';
+            
+            const progressPercent = ((questionNumber / totalQuestions) * 100);
+            progressBar.style.width = progressPercent + '%';
+            progressBar.setAttribute('aria-valuenow', progressPercent);
+            
+            currentQuestion = questionNumber;
+            
+            loadSavedAnswer(questionNumber);
+        }
+        
+        prevBtn.addEventListener('click', function() {
+            if (currentQuestion > 1) {
+                showQuestion(currentQuestion - 1);
+            }
+        });
+        
+        nextBtn.addEventListener('click', function() {
+            if (currentQuestion < totalQuestions) {
+                showQuestion(currentQuestion + 1);
+            } else {
+                showQuestion(1);
+            }
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            if (document.activeElement.tagName !== 'INPUT' && 
+                document.activeElement.tagName !== 'TEXTAREA' && 
+                document.activeElement.tagName !== 'SELECT') {
+                if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+                    if (currentQuestion > 1) {
+                        showQuestion(currentQuestion - 1);
+                    }
+                } else if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+                    if (currentQuestion < totalQuestions) {
+                        showQuestion(currentQuestion + 1);
+                    }
+                }
+            }
+        });
+        
+        navDots.forEach(dot => {
+            dot.addEventListener('click', function() {
+                const questionNum = parseInt(this.getAttribute('data-question'));
+                showQuestion(questionNum);
+            });
+            
+            dot.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    const questionNum = parseInt(this.getAttribute('data-question'));
+                    showQuestion(questionNum);
+                }
+            });
+        });
+        
+        document.querySelectorAll('.option-input').forEach(radio => {
+            radio.addEventListener('change', function() {
+                const questionClass = Array.from(this.classList).find(cls => cls.startsWith('question-'));
+                const questionNum = parseInt(questionClass.replace('question-', '').replace('-option', ''));
+                
+                if (!answeredStatus[questionNum]) {
+                    answeredQuestions++;
+                    answeredStatus[questionNum] = true;
+                    answeredCount.textContent = answeredQuestions;
+                    
+                    document.querySelector(`.nav-dot[data-question="${questionNum}"]`).classList.add('answered');
+                }
+                
+                saveAnswer(this.name, this.value);
+            });
+        });
+        
+        function saveAnswer(questionName, value) {
+            try {
+                localStorage.setItem('exam_answer_' + questionName, value);
+            } catch (e) {
+                console.warn('Could not save answer to localStorage', e);
+            }
+        }
+        
+        function loadSavedAnswer(questionNum) {
+            try {
+                const questionId = document.getElementById('question-' + questionNum).querySelector('.option-input').name.split('_')[1];
+                const savedValue = localStorage.getItem('exam_answer_answer_' + questionId);
+                
+                if (savedValue) {
+                    const radio = document.querySelector(`input[name="answer_${questionId}"][value="${savedValue}"]`);
+                    if (radio) {
+                        radio.checked = true;
+                        if (!answeredStatus[questionNum]) {
+                            answeredQuestions++;
+                            answeredStatus[questionNum] = true;
+                            answeredCount.textContent = answeredQuestions;
+                            document.querySelector(`.nav-dot[data-question="${questionNum}"]`).classList.add('answered');
+                        }
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not load saved answer', e);
+            }
+        }
+        
+        function saveProgress() {
+            const answers = {};
+            document.querySelectorAll('.option-input:checked').forEach(radio => {
+                answers[radio.name] = radio.value;
+            });
+            
+            try {
+                localStorage.setItem('exam_progress', JSON.stringify({
+                    answers: answers,
+                    timeSpent: seconds,
+                    lastSaved: new Date().toISOString()
+                }));
+            } catch (e) {
+                console.warn('Could not save progress to localStorage', e);
+            }
+        }
+        
+        function showSaveIndicator() {
+            const indicator = document.getElementById('saveIndicator');
+            indicator.style.display = 'block';
+            
+            setTimeout(() => {
+                indicator.style.display = 'none';
+            }, 3000);
+        }
+        
+        const submitBtn = document.getElementById('submitBtn');
+        const confirmModal = document.getElementById('confirmModal');
+        const cancelSubmit = document.getElementById('cancelSubmit');
+        const confirmSubmit = document.getElementById('confirmSubmit');
+        const unansweredWarning = document.getElementById('unanswered-warning');
+        
+        submitBtn.addEventListener('click', function() {
+            const unanswered = totalQuestions - answeredQuestions;
+            
+            if (unanswered > 0) {
+                unansweredWarning.textContent = `Warning: You have ${unanswered} unanswered question${unanswered > 1 ? 's' : ''}.`;
+            } else {
+                unansweredWarning.textContent = '';
+            }
+            
+            confirmModal.style.display = 'flex';
+        });
+        
+        cancelSubmit.addEventListener('click', function() {
+            confirmModal.style.display = 'none';
+        });
+        
+        confirmSubmit.addEventListener('click', function() {
+            try {
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('exam_')) {
+                        localStorage.removeItem(key);
+                    }
+                });
+            } catch (e) {
+                console.warn('Could not clear saved progress', e);
+            }
+            
+            document.getElementById('examForm').submit();
+        });
+        
+        showQuestion(1);
+        navDots[0].classList.add('active');
+        navDots[0].setAttribute('aria-selected', 'true');
+        
+        window.addEventListener('click', function(event) {
+            if (event.target === confirmModal) {
+                confirmModal.style.display = 'none';
+            }
+        });
+        
+        window.addEventListener('beforeunload', function(e) {
+            saveProgress();
+            
+            if (answeredQuestions > 0 && answeredQuestions < totalQuestions) {
+                e.preventDefault();
+                e.returnValue = '';
+                return '';
+            }
+        });
+        
+        try {
+            const savedProgress = localStorage.getItem('exam_progress');
+            if (savedProgress) {
+                const progress = JSON.parse(savedProgress);
+                const lastSaved = new Date(progress.lastSaved);
+                const now = new Date();
+                const minutesSinceSave = Math.floor((now - lastSaved) / 1000 / 60);
+                
+                if (minutesSinceSave < 60) {
+                    if (confirm(`You have unsaved progress from ${minutesSinceSave} minutes ago. Would you like to restore it?`)) {
+                        seconds = progress.timeSpent;
+                        const h = Math.floor(seconds / 3600);
+                        const m = Math.floor((seconds % 3600) / 60);
+                        const s = seconds % 60;
+                        timer.textContent = 
+                            (h < 10 ? '0' + h : h) + ':' +
+                            (m < 10 ? '0' + m : m) + ':' +
+                            (s < 10 ? '0' + s : s);
+                        timeSpentInput.value = seconds;
+                        
+                        Object.entries(progress.answers).forEach(([name, value]) => {
+                            const radio = document.querySelector(`input[name="${name}"][value="${value}"]`);
+                            if (radio) radio.checked = true;
+                            
+                            const event = new Event('change');
+                            radio.dispatchEvent(event);
+                        });
+                    } else {
+                        Object.keys(localStorage).forEach(key => {
+                            if (key.startsWith('exam_')) {
+                                localStorage.removeItem(key);
+                            }
+                        });
+                    }
+                }
+            }
+        } catch (e) {
+            console.warn('Could not restore saved progress', e);
+        }
+    });
+</script>
 {% endblock %}

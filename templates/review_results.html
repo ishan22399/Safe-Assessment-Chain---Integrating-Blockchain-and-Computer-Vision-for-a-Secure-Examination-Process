@@ -1,0 +1,568 @@
+{% extends "base.html" %}
+{% block title %}View Results{% endblock %}
+{% block content %}
+<style>
+    .results-container {
+        max-width: 1000px;
+        margin: 30px auto;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 25px;
+    }
+
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+        position: relative;
+        padding-left: 15px;
+    }
+
+    .page-title::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 10%;
+        height: 80%;
+        width: 5px;
+        background: linear-gradient(to bottom, #4776E6, #8E54E9);
+        border-radius: 5px;
+    }
+
+    .exam-name {
+        color: #4776E6;
+        font-weight: 600;
+    }
+
+    .result-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    .card-header {
+        background: linear-gradient(90deg, #f8f9fa, #f1f3f9);
+        padding: 15px 25px;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .card-title {
+        margin: 0;
+        color: #333;
+        font-size: 1.2rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+    }
+
+    .card-title i {
+        margin-right: 10px;
+        color: #4776E6;
+    }
+
+    .card-body {
+        padding: 25px;
+    }
+
+    /* Score Visualization */
+    .score-container {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 30px;
+        justify-content: center;
+        align-items: center;
+        padding: 15px 0;
+    }
+
+    .score-circle {
+        width: 180px;
+        height: 180px;
+        position: relative;
+        margin: 0 auto;
+    }
+
+    .circle-bg {
+        fill: none;
+        stroke: #f0f0f8;
+        stroke-width: 10;
+    }
+
+    .circle-progress {
+        fill: none;
+        stroke: url(#gradient);
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-dasharray: 440;
+        stroke-dashoffset: 440;
+        transition: stroke-dashoffset 1s ease;
+    }
+
+    .score-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        width: 100%;
+    }
+
+    .score-value {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #333;
+        line-height: 1;
+    }
+
+    .score-label {
+        font-size: 0.85rem;
+        color: #666;
+        text-transform: uppercase;
+    }
+
+    .score-details {
+        max-width: 350px;
+    }
+
+    .score-grade {
+        font-size: 3.5rem;
+        font-weight: 800;
+        text-align: center;
+        position: relative;
+        margin: 0 0 15px 0;
+        line-height: 1;
+    }
+
+    .grade-a {
+        color: #27ae60;
+    }
+
+    .grade-b {
+        color: #2980b9;
+    }
+
+    .grade-c {
+        color: #f39c12;
+    }
+
+    .grade-d, .grade-f {
+        color: #e74c3c;
+    }
+
+    .score-stats {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .stat-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f8;
+    }
+
+    .stat-label {
+        color: #666;
+    }
+
+    .stat-value {
+        font-weight: 600;
+        color: #333;
+    }
+
+    /* Ranking Table */
+    .rankings-table-container {
+        overflow-x: auto;
+    }
+
+    .rankings-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        border-radius: 8px;
+    }
+
+    .rankings-table th {
+        background-color: #f8f9fa;
+        color: #555;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.8rem;
+        letter-spacing: 0.5px;
+        padding: 14px 16px;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .rankings-table td {
+        padding: 16px;
+        border-bottom: 1px solid #eaeaea;
+        vertical-align: middle;
+        transition: all 0.2s;
+    }
+
+    .rankings-table tbody tr {
+        position: relative;
+    }
+
+    .rankings-table tbody tr:hover {
+        background-color: rgba(71, 118, 230, 0.03);
+    }
+
+    .rankings-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .rank-cell {
+        font-weight: 600;
+        text-align: center;
+        width: 60px;
+    }
+
+    .top-rank {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        margin: 0 auto;
+    }
+
+    .rank-1 {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+    }
+
+    .rank-2 {
+        background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+    }
+
+    .rank-3 {
+        background: linear-gradient(135deg, #CD7F32, #8B4513);
+    }
+
+    .student-cell {
+        font-weight: 500;
+        color: #333;
+    }
+
+    .you {
+        background-color: rgba(71, 118, 230, 0.05);
+    }
+
+    .you td:first-child::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 3px;
+        background: #4776E6;
+    }
+
+    .you .student-cell {
+        font-weight: 600;
+        color: #4776E6;
+    }
+
+    /* Result Share */
+    .share-actions {
+        display: flex;
+        justify-content: center;
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .btn-share {
+        background-color: #f8f9fa;
+        border: 1px solid #eaeaea;
+        padding: 10px 15px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        color: #333;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-decoration: none;
+    }
+
+    .btn-share:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    }
+
+    .btn-share i {
+        font-size: 1.1rem;
+    }
+
+    /* No Result State */
+    .no-result {
+        text-align: center;
+        padding: 60px 20px;
+        background-color: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+    }
+
+    .no-result-icon {
+        font-size: 4rem;
+        color: #e0e0e0;
+        margin-bottom: 20px;
+    }
+
+    .no-result-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .no-result-text {
+        color: #666;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .btn-take-exam {
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        margin-top: 20px;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-take-exam:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(71, 118, 230, 0.3);
+    }
+</style>
+
+<!-- Include FontAwesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="results-container">
+    <div class="page-header">
+        <h2 class="page-title">Exam Results</h2>
+    </div>
+
+    {% if result %}
+    <!-- User has completed the exam -->
+    <div class="result-card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-chart-pie"></i> Performance Summary: <span class="exam-name">{{ exam.name }}</span>
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="score-container">
+                <div class="score-circle">
+                    <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+                        <defs>
+                            <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#4776E6" />
+                                <stop offset="100%" stop-color="#8E54E9" />
+                            </linearGradient>
+                        </defs>
+                        <circle class="circle-bg" cx="80" cy="80" r="70" />
+                        <circle class="circle-progress" cx="80" cy="80" r="70" 
+                                transform="rotate(-90 80 80)" />
+                    </svg>
+                    <div class="score-text">
+                        <div class="score-value">{{ result.score }}%</div>
+                        <div class="score-label">Your Score</div>
+                    </div>
+                </div>
+
+                <div class="score-details">
+                    <div class="score-grade grade-a" id="grade">A</div>
+                    <ul class="score-stats">
+                        <li class="stat-item">
+                            <span class="stat-label">Exam</span>
+                            <span class="stat-value">{{ exam.name }}</span>
+                        </li>
+                        <li class="stat-item">
+                            <span class="stat-label">Your Rank</span>
+                            <span class="stat-value" id="your-rank">Loading...</span>
+                        </li>
+                        <li class="stat-item">
+                            <span class="stat-label">Total Participants</span>
+                            <span class="stat-value">{{ rankings|length }}</span>
+                        </li>
+                        <li class="stat-item">
+                            <span class="stat-label">Date Completed</span>
+                            <span class="stat-value">{{ result.timestamp|date }}</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="share-actions">
+                <button class="btn-share" id="btn-share">
+                    <i class="fas fa-share-alt"></i> Share Result
+                </button>
+                <button class="btn-share" id="btn-certificate">
+                    <i class="fas fa-certificate"></i> Get Certificate
+                </button>
+                <button class="btn-share" id="btn-download">
+                    <i class="fas fa-download"></i> Download
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Rankings Table -->
+    <div class="result-card">
+        <div class="card-header">
+            <h3 class="card-title">
+                <i class="fas fa-trophy"></i> Leaderboard
+            </h3>
+        </div>
+        <div class="card-body">
+            <div class="rankings-table-container">
+                <table class="rankings-table">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Student</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for rank, student_result in enumerate(rankings, 1) %}
+                        <tr {% if student_result.student.username == result.student.username %}class="you"{% endif %} id="rank-row-{{ rank }}">
+                            <td class="rank-cell">
+                                {% if rank <= 3 %}
+                                <div class="top-rank rank-{{ rank }}">{{ rank }}</div>
+                                {% else %}
+                                {{ rank }}
+                                {% endif %}
+                            </td>
+                            <td class="student-cell">
+                                {{ student_result.student.username }}
+                                {% if student_result.student.username == result.student.username %}
+                                <span class="badge" style="background-color: rgba(71, 118, 230, 0.1); color: #4776E6; padding: 2px 8px; border-radius: 10px; font-size: 0.75rem; margin-left: 8px;">You</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ student_result.score }}%</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- User has not completed the exam -->
+    <div class="no-result">
+        <div class="no-result-icon">
+            <i class="fas fa-file-alt"></i>
+        </div>
+        <h3 class="no-result-title">No Results Available</h3>
+        <p class="no-result-text">You have not completed this exam yet. Complete the exam to see your results and rankings.</p>
+        <a href="{{ url_for('take_exam', exam_id=exam.id) }}" class="btn-take-exam">
+            <i class="fas fa-play-circle"></i> Take Exam Now
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        {% if result %}
+        // Set up circular progress
+        const score = {{ result.score }};
+        const circle = document.querySelector('.circle-progress');
+        const offset = 440 - (440 * score / 100);
+        circle.style.strokeDashoffset = offset;
+        
+        // Set the grade based on score
+        const grade = document.getElementById('grade');
+        if (score >= 90) {
+            grade.textContent = 'A';
+            grade.className = 'score-grade grade-a';
+        } else if (score >= 80) {
+            grade.textContent = 'B';
+            grade.className = 'score-grade grade-b';
+        } else if (score >= 70) {
+            grade.textContent = 'C';
+            grade.className = 'score-grade grade-c';
+        } else if (score >= 60) {
+            grade.textContent = 'D';
+            grade.className = 'score-grade grade-d';
+        } else {
+            grade.textContent = 'F';
+            grade.className = 'score-grade grade-f';
+        }
+        
+        // Find user's rank
+        const yourUsername = "{{ result.student.username }}";
+        const rankings = document.querySelectorAll('.rankings-table tbody tr');
+        let yourRank = 0;
+        
+        rankings.forEach((row, index) => {
+            if (row.classList.contains('you')) {
+                yourRank = index + 1;
+            }
+        });
+        
+        document.getElementById('your-rank').textContent = yourRank + ' of {{ rankings|length }}';
+        
+        // Animate to scroll to user's position
+        setTimeout(() => {
+            const userRow = document.querySelector('.rankings-table tbody tr.you');
+            if (userRow) {
+                userRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+        }, 1000);
+        
+        // Share button functionality
+        document.getElementById('btn-share').addEventListener('click', function() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Exam Results',
+                    text: `I scored ${score}% on the ${exam.name} exam!`,
+                    url: window.location.href
+                })
+                .catch(console.error);
+            } else {
+                alert('Share functionality not available in your browser.');
+            }
+        });
+        
+        // Add download functionality (just a placeholder)
+        document.getElementById('btn-download').addEventListener('click', function() {
+            alert('Download functionality would be implemented here.');
+        });
+        
+        // Add certificate functionality (just a placeholder)
+        document.getElementById('btn-certificate').addEventListener('click', function() {
+            alert('Certificate generation would be implemented here.');
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

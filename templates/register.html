@@ -1,25 +1,290 @@
 {% extends "base.html" %}
 {% block title %}Register{% endblock %}
 {% block content %}
-<div class="col-md-6 offset-md-3">
-    <h2>Register</h2>
-    <form method="POST" action="{{ url_for('register') }}">
-        <div class="mb-3">
-            <label for="username" class="form-label">Username</label>
-            <input type="text" class="form-control" id="username" name="username" required>
+<style>
+    .register-container {
+        max-width: 800px;
+        margin: 30px auto;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .register-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+    }
+
+    .card-header {
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        padding: 25px;
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .card-header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .register-title {
+        margin: 0;
+        font-weight: 700;
+        font-size: 1.8rem;
+        position: relative;
+    }
+
+    .register-subtitle {
+        margin: 10px 0 0 0;
+        font-weight: 400;
+        opacity: 0.9;
+        position: relative;
+    }
+
+    .form-container {
+        padding: 30px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-label {
+        display: block;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 8px;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px 15px;
+        border: 1px solid #e0e0f0;
+        border-radius: 8px;
+        background-color: #fcfcff;
+        transition: all 0.3s;
+        font-size: 1rem;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #4776E6;
+        box-shadow: 0 0 0 3px rgba(71, 118, 230, 0.15);
+        background-color: #fff;
+    }
+
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+
+    @media (min-width: 768px) {
+        .form-row {
+            grid-template-columns: 1fr 1fr;
+        }
+    }
+
+    .role-selector {
+        padding: 15px;
+        border: 1px solid #e0e0f0;
+        border-radius: 8px;
+        margin-bottom: 20px;
+        transition: all 0.3s;
+    }
+
+    .role-selector.active {
+        border-color: #4776E6;
+        background-color: rgba(71, 118, 230, 0.05);
+    }
+
+    .role-title {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-weight: 600;
+        color: #444;
+        margin-bottom: 5px;
+    }
+
+    .role-title i {
+        color: #4776E6;
+    }
+
+    .role-description {
+        font-size: 0.9rem;
+        color: #666;
+        margin: 0 0 0 25px;
+    }
+
+    .btn-register {
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        padding: 15px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 1.1rem;
+        cursor: pointer;
+        transition: all 0.3s;
+        width: 100%;
+        margin-top: 10px;
+    }
+
+    .btn-register:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(71, 118, 230, 0.3);
+    }
+
+    .login-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 0.95rem;
+    }
+
+    .login-link a {
+        color: #4776E6;
+        font-weight: 600;
+        text-decoration: none;
+    }
+
+    .login-link a:hover {
+        text-decoration: underline;
+    }
+
+    .student-fields {
+        border-top: 1px solid #e0e0f0;
+        margin-top: 20px;
+        padding-top: 20px;
+        display: none;
+    }
+
+    .student-fields.active {
+        display: block;
+        animation: fadeIn 0.4s ease-in-out;
+    }
+</style>
+
+<div class="register-container">
+    <div class="register-card">
+        <div class="card-header">
+            <h2 class="register-title">Create an Account</h2>
+            <p class="register-subtitle">Join our secure exam platform and get started</p>
         </div>
-        <div class="mb-3">
-            <label for="password" class="form-label">Password</label>
-            <input type="password" class="form-control" id="password" name="password" required>
+        <div class="form-container">
+            <form action="{{ url_for('register') }}" method="POST">
+                <div class="form-group">
+                    <label for="username" class="form-label">Username</label>
+                    <input type="text" class="form-control" id="username" name="username" required>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email" class="form-label">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Select Your Role</label>
+                    
+                    <div class="role-selector active" id="student-role">
+                        <div class="role-title">
+                            <input type="radio" name="role" value="student" id="role-student" checked>
+                            <label for="role-student"><i class="fas fa-user-graduate"></i> Student</label>
+                        </div>
+                        <p class="role-description">Register as a student to participate in exams</p>
+                    </div>
+                    
+                    <div class="role-selector" id="admin-role">
+                        <div class="role-title">
+                            <input type="radio" name="role" value="admin" id="role-admin">
+                            <label for="role-admin"><i class="fas fa-user-shield"></i> Administrator</label>
+                        </div>
+                        <p class="role-description">Register as an administrator to manage exams</p>
+                    </div>
+                </div>
+                
+                <!-- Additional fields for student -->
+                <div class="student-fields active" id="student-fields">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="aadhaar_number" class="form-label">Aadhaar Number</label>
+                            <input type="text" class="form-control" id="aadhaar_number" name="aadhaar_number">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="college_name" class="form-label">College Name</label>
+                            <input type="text" class="form-control" id="college_name" name="college_name">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="education_level" class="form-label">Education Level</label>
+                        <select class="form-control" id="education_level" name="education_level">
+                            <option value="">Select Education Level</option>
+                            <option value="High School">High School</option>
+                            <option value="Undergraduate">Undergraduate</option>
+                            <option value="Graduate">Graduate</option>
+                            <option value="Postgraduate">Postgraduate</option>
+                            <option value="Doctorate">Doctorate</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn-register">
+                    Create Account
+                </button>
+                
+                <div class="login-link">
+                    Already have an account? <a href="{{ url_for('login') }}">Log in here</a>
+                </div>
+            </form>
         </div>
-        <div class="mb-3">
-            <label for="role" class="form-label">Role</label>
-            <select class="form-select" id="role" name="role" required>
-                <option value="student">Student</option>
-                <option value="admin">Admin</option>
-            </select>
-        </div>
-        <button type="submit" class="btn btn-primary">Register</button>
-    </form>
+    </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const studentRole = document.getElementById('student-role');
+        const adminRole = document.getElementById('admin-role');
+        const studentFields = document.getElementById('student-fields');
+        const roleStudentRadio = document.getElementById('role-student');
+        const roleAdminRadio = document.getElementById('role-admin');
+        
+        // Toggle role selection
+        roleStudentRadio.addEventListener('change', function() {
+            if (this.checked) {
+                studentRole.classList.add('active');
+                adminRole.classList.remove('active');
+                studentFields.classList.add('active');
+            }
+        });
+        
+        roleAdminRadio.addEventListener('change', function() {
+            if (this.checked) {
+                adminRole.classList.add('active');
+                studentRole.classList.remove('active');
+                studentFields.classList.remove('active');
+            }
+        });
+    });
+</script>
 {% endblock %}

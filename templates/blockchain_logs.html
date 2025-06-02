@@ -1,0 +1,422 @@
+{% extends "base.html" %}
+{% block title %}Blockchain Transaction Logs{% endblock %}
+{% block content %}
+<style>
+    .card {
+        border: none;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+    }
+    .card-header {
+        background-color: #343a40;
+        color: white;
+        border-radius: 10px 10px 0 0 !important;
+        font-weight: 600;
+    }
+    .table th {
+        background-color: #f1f1f1;
+        border-bottom: 2px solid #dee2e6;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 123, 255, 0.075);
+    }
+    .badge-verified {
+        background-color: #28a745;
+    }
+    .badge-unverified {
+        background-color: #dc3545;
+    }
+    .hash-cell {
+        max-width: 150px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    .pagination {
+        justify-content: center;
+    }
+    .search-box {
+        margin-bottom: 20px;
+    }
+    .blockchain-icon {
+        font-size: 1.4rem;
+        margin-right: 8px;
+        color: #17a2b8;
+    }
+    .details-btn {
+        padding: 2px 8px;
+        font-size: 0.8rem;
+    }
+    .timestamp {
+        font-size: 0.9rem;
+        color: #6c757d;
+    }
+</style>
+
+<!-- Page Header -->
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h2><i class="fas fa-cubes blockchain-icon"></i>Blockchain Transaction Logs</h2>
+    </div>
+    <div class="col-md-4 text-right">
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary" id="refresh-btn">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+            <button type="button" class="btn btn-outline-primary" id="verify-all-btn">
+                <i class="fas fa-check-double"></i> Verify All
+            </button>
+            <a href="{{ url_for('verify_certificate', tx_hash='') }}" class="btn btn-outline-success">
+                <i class="fas fa-certificate"></i> Verify Certificate
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Search & Filter -->
+<div class="card search-box">
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-8">
+                <div class="input-group">
+                    <div class="input-group-prepend">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                    </div>
+                    <input type="text" id="search-input" class="form-control" placeholder="Search transactions...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <select class="form-control" id="action-filter">
+                    <option value="">All Actions</option>
+                    <option value="exam_creation">Exam Creation</option>
+                    <option value="exam_update">Exam Update</option>
+                    <option value="question_added">Question Added</option>
+                    <option value="exam_registration">Exam Registration</option>
+                    <option value="exam_submission">Exam Submission</option>
+                    <option value="results_published">Results Published</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Log Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="fas fa-list"></i> Transaction Logs</span>
+        <span class="badge badge-light">{{ logs|length }} Records</span>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>TX Hash</th>
+                        <th>Action</th>
+                        <th>Related ID</th>
+                        <th>User</th>
+                        <th>Timestamp</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr>
+                        <td>{{ loop.index }}</td>
+                        <td class="hash-cell" title="{{ log.tx_hash }}">{{ log.tx_hash[:10] }}...{{ log.tx_hash[-6:] }}</td>
+                        <td>
+                            {% if log.action_type == 'exam_creation' %}
+                                <span class="badge badge-primary">Exam Created</span>
+                            {% elif log.action_type == 'exam_update' %}
+                                <span class="badge badge-info">Exam Updated</span>
+                            {% elif log.action_type == 'exam_deletion' %}
+                                <span class="badge badge-danger">Exam Deleted</span>
+                            {% elif log.action_type == 'question_added' %}
+                                <span class="badge badge-secondary">Question Added</span>
+                            {% elif log.action_type == 'exam_registration' %}
+                                <span class="badge badge-warning">Registration</span>
+                            {% elif log.action_type == 'exam_submission' %}
+                                <span class="badge badge-success">Exam Submitted</span>
+                            {% elif log.action_type == 'results_published' %}
+                                <span class="badge badge-dark">Results Published</span>
+                            {% else %}
+                                <span class="badge badge-light">{{ log.action_type }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ log.related_id }}</td>
+                        <td>
+                            {% if log.user %}
+                                {{ log.user.username }}
+                            {% else %}
+                                <em>System</em>
+                            {% endif %}
+                        </td>
+                        <td class="timestamp">{{ log.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+                        <td>
+                            {% if log.verified %}
+                                <span class="badge badge-verified">Verified</span>
+                            {% else %}
+                                <span class="badge badge-unverified">Unverified</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-info details-btn" data-toggle="modal" data-target="#detailsModal" data-tx="{{ log.tx_hash }}" data-details="{{ log.details }}">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <a href="{{ url_for('api_verify_transaction', tx_hash=log.tx_hash) }}" target="_blank" class="btn btn-outline-success details-btn">
+                                    <i class="fas fa-check"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" class="text-center py-4">No blockchain logs found</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Pagination -->
+<nav aria-label="Page navigation">
+    <ul class="pagination">
+        <li class="page-item disabled">
+            <a class="page-link" href="#" tabindex="-1">Previous</a>
+        </li>
+        <li class="page-item active">
+            <a class="page-link" href="#">1</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="#">2</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="#">3</a>
+        </li>
+        <li class="page-item">
+            <a class="page-link" href="#">Next</a>
+        </li>
+    </ul>
+</nav>
+
+<!-- Transaction Details Modal -->
+<div class="modal fade" id="detailsModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-info-circle mr-2"></i>Transaction Details
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="font-weight-bold">Transaction Hash:</label>
+                    <div class="input-group">
+                        <input type="text" id="tx-hash" class="form-control" readonly>
+                        <div class="input-group-append">
+                            <button class="btn btn-outline-secondary copy-btn" type="button" data-clipboard-target="#tx-hash">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="font-weight-bold">Details:</label>
+                    <div id="tx-details-formatted" class="p-3 bg-light" style="border-radius: 5px; max-height: 300px; overflow-y: auto; font-family: 'Courier New', monospace;"></div>
+                    <pre id="tx-details" class="d-none"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <a id="verify-link" href="#" class="btn btn-success" target="_blank">
+                    <i class="fas fa-external-link-alt mr-1"></i>Verify on Blockchain
+                </a>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.6/clipboard.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Initialize clipboard.js
+        new ClipboardJS('.copy-btn');
+        
+        // Handle copying animation
+        $('.copy-btn').click(function() {
+            const btn = $(this);
+            const originalHtml = btn.html();
+            btn.html('<i class="fas fa-check"></i>');
+            setTimeout(function() {
+                btn.html(originalHtml);
+            }, 1500);
+        });
+        
+        // Search functionality
+        $('#search-input').on('keyup', function() {
+            const value = $(this).val().toLowerCase();
+            $('table tbody tr').filter(function() {
+                $(this).toggle($(this).text().toLowerCase().indexOf(value) > -1);
+            });
+        });
+        
+        // Filter by action type
+        $('#action-filter').change(function() {
+            const value = $(this).val().toLowerCase();
+            if (value === '') {
+                $('table tbody tr').show();
+            } else {
+                $('table tbody tr').filter(function() {
+                    return $(this).find('td:nth-child(3)').text().toLowerCase().indexOf(value) > -1;
+                }).show();
+                $('table tbody tr').filter(function() {
+                    return $(this).find('td:nth-child(3)').text().toLowerCase().indexOf(value) === -1;
+                }).hide();
+            }
+        });
+        
+        // Refresh button
+        $('#refresh-btn').click(function() {
+            location.reload();
+        });
+        
+        // Verify all transactions
+        $('#verify-all-btn').click(function() {
+            const btn = $(this);
+            const originalHtml = btn.html();
+            btn.html('<i class="fas fa-spinner fa-spin"></i> Verifying...');
+            btn.prop('disabled', true);
+            
+            // Get all unverified transaction hashes
+            const unverifiedHashes = [];
+            $('.badge-unverified').each(function() {
+                const row = $(this).closest('tr');
+                const txHash = row.find('.hash-cell').attr('title');
+                if (txHash) {
+                    unverifiedHashes.push({
+                        hash: txHash,
+                        row: row
+                    });
+                }
+            });
+            
+            if (unverifiedHashes.length === 0) {
+                btn.html('<i class="fas fa-check-circle"></i> All Verified');
+                setTimeout(() => {
+                    btn.html(originalHtml);
+                    btn.prop('disabled', false);
+                }, 2000);
+                return;
+            }
+            
+            let completedCount = 0;
+            let successCount = 0;
+            
+            // Function to verify transactions sequentially
+            function verifySequentially(index) {
+                if (index >= unverifiedHashes.length) {
+                    // All done
+                    btn.html(`<i class="fas fa-check-circle"></i> ${successCount}/${unverifiedHashes.length} Verified`);
+                    setTimeout(() => {
+                        btn.html(originalHtml);
+                        btn.prop('disabled', false);
+                    }, 3000);
+                    return;
+                }
+                
+                const current = unverifiedHashes[index];
+                
+                // Update button text to show progress
+                btn.html(`<i class="fas fa-spinner fa-spin"></i> Verifying (${index}/${unverifiedHashes.length})`);
+                
+                // Make API call to verify
+                fetch(`/api/verify/${current.hash}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        completedCount++;
+                        
+                        if (data.verified) {
+                            successCount++;
+                            
+                            // Update the UI to show verified
+                            const statusCell = current.row.find('td:nth-child(7)');
+                            statusCell.html('<span class="badge badge-verified">Verified</span>');
+                            
+                            // Add a subtle highlight effect
+                            current.row.css('background-color', 'rgba(40, 167, 69, 0.1)');
+                            setTimeout(() => {
+                                current.row.css('background-color', '');
+                            }, 2000);
+                        }
+                        
+                        // Process next transaction after a short delay
+                        setTimeout(() => {
+                            verifySequentially(index + 1);
+                        }, 500);
+                    })
+                    .catch(error => {
+                        console.error('Error verifying transaction:', error);
+                        completedCount++;
+                        
+                        // Process next transaction after a short delay
+                        setTimeout(() => {
+                            verifySequentially(index + 1);
+                        }, 500);
+                    });
+            }
+            
+            // Start verification process
+            verifySequentially(0);
+        });
+        
+        // Set modal data
+        $('#detailsModal').on('show.bs.modal', function(event) {
+            const button = $(event.relatedTarget);
+            const txHash = button.data('tx');
+            const details = button.data('details');
+            
+            const modal = $(this);
+            modal.find('#tx-hash').val(txHash);
+            
+            // Store raw details in hidden element
+            modal.find('#tx-details').text(details ? details : '');
+            
+            // Format details for display
+            const detailsContainer = modal.find('#tx-details-formatted');
+            if (details) {
+                try {
+                    // Try to parse as JSON
+                    const jsonObject = JSON.parse(details);
+                    let formattedHTML = '';
+                    
+                    // Display as formatted key-value pairs
+                    Object.entries(jsonObject).forEach(([key, value]) => {
+                        formattedHTML += `<div class="mb-2">
+                            <strong class="text-primary">${key}:</strong> 
+                            <span class="ml-2">${typeof value === 'object' ? JSON.stringify(value) : value}</span>
+                        </div>`;
+                    });
+                    
+                    detailsContainer.html(formattedHTML);
+                } catch (e) {
+                    // If not valid JSON, show as plain text
+                    detailsContainer.html(`<div class="text-muted">${details}</div>`);
+                }
+            } else {
+                detailsContainer.html('<em>No additional details available</em>');
+            }
+            
+            modal.find('#verify-link').attr('href', '/api/verify/' + txHash);
+        });
+    });
+</script>
+{% endblock %}

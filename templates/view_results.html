@@ -1,22 +1,695 @@
-<h2>Results for {{ result.exam.name if result.exam else "Unknown Exam" }}</h2>
-<p><strong>Your Score:</strong> {{ result.score }}</p>
-<p><strong>Your Rank:</strong> {{ result.rank }}</p>
-<h3>Rankings</h3>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Rank</th>
-            <th>Student</th>
-            <th>Score</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for ranking in rankings %}
-        <tr>
-            <td>{{ ranking.rank }}</td>
-            <td>{{ ranking.student.username if ranking.student else "Unknown Student" }}</td>
-            <td>{{ ranking.score }}</td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
+{% extends "base.html" %}
+{% block title %}View Results{% endblock %}
+{% block content %}
+<style>
+    .results-container {
+        max-width: 1100px;
+        margin: 30px auto;
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .page-header {
+        margin-bottom: 30px;
+    }
+
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+        position: relative;
+        padding-left: 15px;
+    }
+
+    .page-title::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 10%;
+        height: 80%;
+        width: 5px;
+        background: linear-gradient(to bottom, #4776E6, #8E54E9);
+        border-radius: 5px;
+    }
+
+    .exam-name {
+        color: #4776E6;
+        font-weight: 600;
+    }
+
+    .results-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 30px;
+    }
+
+    @media (min-width: 992px) {
+        .results-grid {
+            grid-template-columns: minmax(350px, 1fr) minmax(500px, 2fr);
+        }
+    }
+
+    /* Personal Result Card */
+    .personal-result {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        animation: slideIn 0.6s ease-in-out forwards;
+        animation-delay: 0.2s;
+        opacity: 0;
+    }
+
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(-20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+
+    .result-header {
+        padding: 25px;
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        color: white;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .result-header::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        right: -20%;
+        width: 300px;
+        height: 300px;
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 50%;
+    }
+
+    .result-title {
+        margin: 0 0 15px 0;
+        font-size: 1.4rem;
+        font-weight: 600;
+        position: relative;
+    }
+
+    .result-subtitle {
+        margin: 0;
+        opacity: 0.8;
+        font-weight: 400;
+        font-size: 1rem;
+        position: relative;
+    }
+
+    .score-circle {
+        width: 180px;
+        height: 180px;
+        position: relative;
+        margin: 30px auto;
+    }
+
+    .circle-bg {
+        fill: none;
+        stroke: rgba(255, 255, 255, 0.2);
+        stroke-width: 10;
+    }
+
+    .circle-progress {
+        fill: none;
+        stroke: white;
+        stroke-width: 10;
+        stroke-linecap: round;
+        stroke-dasharray: 440;
+        stroke-dashoffset: 440;
+        transition: stroke-dashoffset 1s ease;
+    }
+
+    .score-text {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        width: 100%;
+    }
+
+    .score-value {
+        font-size: 3.5rem;
+        font-weight: 700;
+        color: white;
+        line-height: 1;
+    }
+
+    .score-label {
+        font-size: 0.9rem;
+        color: rgba(255, 255, 255, 0.8);
+        text-transform: uppercase;
+    }
+
+    .result-body {
+        padding: 25px;
+    }
+
+    .result-details {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .detail-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 12px 0;
+        border-bottom: 1px solid #f0f0f8;
+        font-size: 0.95rem;
+    }
+
+    .detail-item:last-child {
+        border-bottom: none;
+    }
+
+    .detail-label {
+        color: #666;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+    }
+
+    .detail-label i {
+        margin-right: 10px;
+        color: #4776E6;
+    }
+
+    .detail-value {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .rank-badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 35px;
+        height: 35px;
+        border-radius: 50%;
+        font-weight: 700;
+        color: white;
+        font-size: 1rem;
+        margin-left: 10px;
+    }
+    
+    .rank-1 {
+        background: linear-gradient(135deg, #FFD700, #FFA500);
+    }
+    
+    .rank-2 {
+        background: linear-gradient(135deg, #C0C0C0, #A9A9A9);
+    }
+    
+    .rank-3 {
+        background: linear-gradient(135deg, #CD7F32, #8B4513);
+    }
+    
+    .rank-other {
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+    }
+
+    /* Ranking Table Card */
+    .rankings-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        animation: slideIn 0.6s ease-in-out forwards;
+        animation-delay: 0.4s;
+        opacity: 0;
+    }
+
+    .rankings-header {
+        padding: 20px 25px;
+        background: linear-gradient(90deg, #f8f9fa, #f1f3f9);
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .rankings-title {
+        margin: 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        display: flex;
+        align-items: center;
+    }
+
+    .rankings-title i {
+        margin-right: 12px;
+        color: #4776E6;
+        font-size: 1.2rem;
+    }
+
+    .rankings-body {
+        padding: 5px;
+    }
+
+    .rankings-table-container {
+        overflow-x: auto;
+    }
+
+    .rankings-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .rankings-table th {
+        background-color: #f8f9fa;
+        color: #555;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.5px;
+        padding: 15px;
+        border-bottom: 1px solid #eaeaea;
+        position: sticky;
+        top: 0;
+    }
+
+    .rankings-table td {
+        padding: 12px 15px;
+        border-bottom: 1px solid #eaeaea;
+        vertical-align: middle;
+    }
+
+    .rankings-table tbody tr {
+        transition: all 0.2s;
+    }
+
+    .rankings-table tbody tr:hover {
+        background-color: rgba(71, 118, 230, 0.03);
+    }
+
+    .rankings-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .rank-cell {
+        font-weight: 600;
+        text-align: center;
+        width: 60px;
+    }
+
+    .top-rank {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 600;
+        margin: 0 auto;
+    }
+
+    .student-cell {
+        font-weight: 500;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .avatar-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #4776E6, #8E54E9);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+
+    .you-badge {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: 12px;
+        background-color: rgba(71, 118, 230, 0.1);
+        color: #4776E6;
+        font-size: 0.7rem;
+        font-weight: 600;
+        margin-left: 8px;
+    }
+
+    tr.current-user {
+        background-color: rgba(71, 118, 230, 0.05);
+        animation: highlight 2s infinite alternate ease-in-out;
+    }
+
+    @keyframes highlight {
+        from { background-color: rgba(71, 118, 230, 0.05); }
+        to { background-color: rgba(71, 118, 230, 0.1); }
+    }
+
+    tr.current-user td:first-child {
+        position: relative;
+    }
+
+    tr.current-user td:first-child::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 0;
+        height: 100%;
+        width: 3px;
+        background: #4776E6;
+    }
+
+    .score-cell {
+        font-weight: 600;
+        color: #333;
+        text-align: center;
+    }
+
+    .share-btn {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .btn-share {
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .btn-share:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 15px rgba(71, 118, 230, 0.2);
+    }
+
+    /* No Results State */
+    .no-results {
+        text-align: center;
+        padding: 60px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .no-results-icon {
+        font-size: 4rem;
+        color: #e0e0e0;
+        margin-bottom: 20px;
+    }
+
+    .no-results-title {
+        font-size: 1.5rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .no-results-text {
+        color: #666;
+        max-width: 500px;
+        margin: 0 auto 20px;
+    }
+
+    .btn-take-exam {
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        padding: 12px 25px;
+        border-radius: 8px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+
+    .btn-take-exam:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 20px rgba(71, 118, 230, 0.2);
+    }
+
+    /* Certificate Preview */
+    .cert-preview {
+        margin-top: 30px;
+        background: white;
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        text-align: center;
+    }
+
+    .cert-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+    }
+
+    .cert-image {
+        width: 100%;
+        max-width: 300px;
+        border: 1px solid #eaeaea;
+        border-radius: 8px;
+    }
+
+    .btn-download-cert {
+        margin-top: 15px;
+        background: #f8f9fa;
+        border: 1px solid #eaeaea;
+        padding: 8px 15px;
+        border-radius: 6px;
+        font-weight: 600;
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+    }
+</style>
+
+<!-- Include FontAwesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="results-container">
+    <div class="page-header">
+        <h2 class="page-title">Results for <span class="exam-name">{{ exam.name }}</span></h2>
+    </div>
+
+    {% if student_result %}
+    <div class="results-grid">
+        <!-- Personal Result Card -->
+        <div class="personal-result">
+            <div class="result-header">
+                <h3 class="result-title">Your Result</h3>
+                <p class="result-subtitle">Congratulations on completing the exam!</p>
+                
+                <div class="score-circle">
+                    <svg viewBox="0 0 160 160" xmlns="http://www.w3.org/2000/svg">
+                        <circle class="circle-bg" cx="80" cy="80" r="70" />
+                        <circle class="circle-progress" cx="80" cy="80" r="70" 
+                                transform="rotate(-90 80 80)" id="score-circle" />
+                    </svg>
+                    <div class="score-text">
+                        <div class="score-value">{{ student_result.score }}</div>
+                        <div class="score-label">Score</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="result-body">
+                <ul class="result-details">
+                    <li class="detail-item">
+                        <div class="detail-label">
+                            <i class="fas fa-user"></i> Student
+                        </div>
+                        <div class="detail-value">{{ session['username'] }}</div>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-label">
+                            <i class="fas fa-id-card"></i> Register Number
+                        </div>
+                        <div class="detail-value">{{ rankings[rank - 1][2] }}</div>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-label">
+                            <i class="fas fa-university"></i> College
+                        </div>
+                        <div class="detail-value">{{ rankings[rank - 1][3] }}</div>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-label">
+                            <i class="fas fa-trophy"></i> Rank
+                        </div>
+                        <div class="detail-value">
+                            {{ rank }}
+                            {% if rank <= 3 %}
+                                <span class="rank-badge rank-{{ rank }}">{{ rank }}</span>
+                            {% else %}
+                                <span class="rank-badge rank-other">{{ rank }}</span>
+                            {% endif %}
+                        </div>
+                    </li>
+                    <li class="detail-item">
+                        <div class="detail-label">
+                            <i class="fas fa-users"></i> Total Participants
+                        </div>
+                        <div class="detail-value">{{ rankings|length }}</div>
+                    </li>
+                </ul>
+                
+                <div class="share-btn">
+                    <button class="btn-share" id="shareResults">
+                        <i class="fas fa-share-alt"></i> Share Results
+                    </button>
+                </div>
+                
+                <!-- Certificate Preview -->
+                <div class="cert-preview">
+                    <div class="cert-title">
+                        <i class="fas fa-certificate"></i> Completion Certificate
+                    </div>
+                    <div class="cert-preview-img">
+                        <img src="https://via.placeholder.com/300x200?text=Certificate+Preview" alt="Certificate Preview" class="cert-image">
+                    </div>
+                    <div class="mt-3">
+                        <button class="btn-download-cert">
+                            <i class="fas fa-download"></i> Download Certificate
+                        </button>
+                        {% if student_result.blockchain_tx_hash %}
+                        <a href="{{ url_for('verify_certificate', tx_hash=student_result.blockchain_tx_hash) }}" class="btn btn-primary ml-2" target="_blank">
+                            <i class="fas fa-shield-alt"></i> Verify Certificate
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rankings Card -->
+        <div class="rankings-card">
+            <div class="rankings-header">
+                <h3 class="rankings-title">
+                    <i class="fas fa-list-ol"></i> Overall Rankings
+                </h3>
+            </div>
+            <div class="rankings-body">
+                <div class="rankings-table-container">
+                    <table class="rankings-table">
+                        <thead>
+                            <tr>
+                                <th>Rank</th>
+                                <th>Student Name</th>
+                                <th>Register Number</th>
+                                <th>College Name</th>
+                                <th>Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for idx, (result, username, aadhaar_number, college_name) in enumerate(rankings, start=1) %}
+                            <tr {% if username == session['username'] %}class="current-user"{% endif %}>
+                                <td class="rank-cell">
+                                    {% if idx <= 3 %}
+                                        <div class="top-rank rank-{{ idx }}">{{ idx }}</div>
+                                    {% else %}
+                                        {{ idx }}
+                                    {% endif %}
+                                </td>
+                                <td class="student-cell">
+                                    <div class="avatar-circle">{{ username[0]|upper }}</div>
+                                    <span>{{ username }}</span>
+                                    {% if username == session['username'] %}
+                                        <span class="you-badge">You</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ aadhaar_number }}</td>
+                                <td>{{ college_name }}</td>
+                                <td class="score-cell">{{ result.score }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="no-results">
+        <div class="no-results-icon">
+            <i class="fas fa-clipboard-list"></i>
+        </div>
+        <h3 class="no-results-title">No Results Found</h3>
+        <p class="no-results-text">You have not completed this exam yet. Complete the exam to see your results and rankings.</p>
+        <a href="{{ url_for('take_exam', exam_id=exam.id) }}" class="btn-take-exam">
+            <i class="fas fa-pen"></i> Take Exam Now
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Set up the score circle animation
+        {% if student_result %}
+        const score = {{ student_result.score }};
+        const scoreCircle = document.getElementById('score-circle');
+        const circumference = 2 * Math.PI * 70; // 2πr where r=70
+        
+        scoreCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+        
+        // Calculate offset based on score (assuming max score is 100)
+        const maxScore = 100;
+        const offset = circumference - (score / maxScore) * circumference;
+        
+        // Animate the circle filling
+        setTimeout(() => {
+            scoreCircle.style.strokeDashoffset = offset;
+            scoreCircle.style.transition = 'stroke-dashoffset 1.5s ease-in-out';
+        }, 500);
+        
+        // Scroll to highlight the current user in the rankings table
+        setTimeout(() => {
+            const currentUserRow = document.querySelector('tr.current-user');
+            if (currentUserRow) {
+                currentUserRow.scrollIntoView({
+                    behavior: 'smooth',
+                    block: 'center'
+                });
+            }
+        }, 1000);
+        
+        // Share button functionality
+        document.getElementById('shareResults').addEventListener('click', function() {
+            if (navigator.share) {
+                navigator.share({
+                    title: 'My Exam Results',
+                    text: `I scored ${score} on the {{ exam.name }} exam and ranked #{{ rank }}!`,
+                    url: window.location.href
+                })
+                .catch(console.error);
+            } else {
+                alert('Sharing not supported on this browser');
+            }
+        });
+        {% endif %}
+    });
+</script>
+{% endblock %}

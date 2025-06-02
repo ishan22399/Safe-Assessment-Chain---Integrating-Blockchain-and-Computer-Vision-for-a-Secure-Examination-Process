@@ -1,28 +1,774 @@
 {% extends "base.html" %}
 {% block title %}Student Dashboard{% endblock %}
 {% block content %}
-<h2>Student Dashboard</h2>
-<table class="table">
-    <thead>
-        <tr>
-            <th>Exam Name</th>
-            <th>Description</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        {% for exam in exams %}
-        <tr>
-            <td>{{ exam.name }}</td>
-            <td>{{ exam.description }}</td>
-            <td>
-                <a href="{{ url_for('register_exam', exam_id=exam.id) }}" class="btn btn-primary btn-sm">Register</a>
-                <a href="{{ url_for('take_exam', exam_id=exam.id) }}" class="btn btn-success btn-sm">Take Exam</a>
-                <a href="{{ url_for('view_results', exam_id=exam.id) }}" class="btn btn-info btn-sm">View Results</a>
-            </td>
-        </tr>
-        {% endfor %}
-    </tbody>
-</table>
-<a href="{{ url_for('contact_admin') }}" class="btn btn-secondary mt-3">Contact Admin</a>
+<style>
+    .dashboard-container {
+        animation: fadeIn 0.6s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .dashboard-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 30px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid rgba(0,0,0,0.05);
+    }
+
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #333;
+        margin: 0;
+        position: relative;
+        padding-left: 15px;
+    }
+
+    .page-title::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 10%;
+        height: 80%;
+        width: 5px;
+        background: linear-gradient(to bottom, #4776E6, #8E54E9);
+        border-radius: 5px;
+    }
+
+    .welcome-message {
+        font-size: 1.1rem;
+        color: #666;
+        margin: 0 0 30px 0;
+    }
+
+    .stats-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+
+    .stat-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s;
+        border-left: 4px solid transparent;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    .stat-card.registered {
+        border-left-color: #3498db;
+    }
+
+    .stat-card.available {
+        border-left-color: #2ecc71;
+    }
+
+    .stat-card.upcoming {
+        border-left-color: #f39c12;
+    }
+
+    .stat-card.completed {
+        border-left-color: #9b59b6;
+    }
+
+    .stat-value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        margin: 10px 0;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 0.9rem;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+
+    .stat-icon {
+        float: right;
+        font-size: 2.5rem;
+        opacity: 0.2;
+        margin-top: -45px;
+    }
+
+    .exams-section {
+        margin-bottom: 40px;
+    }
+
+    .section-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        margin-bottom: 20px;
+        color: #333;
+        display: flex;
+        align-items: center;
+    }
+
+    .section-title i {
+        margin-right: 10px;
+        color: #4776E6;
+    }
+
+    .exams-container {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+    }
+
+    .exam-card {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s;
+        position: relative;
+    }
+
+    .exam-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+    }
+
+    .exam-header {
+        padding: 20px;
+        position: relative;
+    }
+
+    .exam-name {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #333;
+        margin: 0 0 5px 0;
+    }
+
+    .exam-date {
+        font-size: 0.9rem;
+        color: #666;
+        display: flex;
+        align-items: center;
+    }
+
+    .exam-date i {
+        margin-right: 6px;
+        color: #4776E6;
+    }
+
+    .exam-status {
+        position: absolute;
+        top: 20px;
+        right: 20px;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: capitalize;
+    }
+
+    .status-registered {
+        background-color: rgba(52, 152, 219, 0.1);
+        color: #3498db;
+    }
+
+    .status-available {
+        background-color: rgba(46, 204, 113, 0.1);
+        color: #2ecc71;
+    }
+
+    .status-upcoming {
+        background-color: rgba(243, 156, 18, 0.1);
+        color: #f39c12;
+    }
+
+    .status-completed {
+        background-color: rgba(155, 89, 182, 0.1);
+        color: #9b59b6;
+    }
+
+    .status-pending {
+        background-color: rgba(149, 165, 166, 0.1);
+        color: #95a5a6;
+    }
+
+    .exam-body {
+        padding: 0 20px 20px;
+    }
+
+    .exam-details {
+        margin-bottom: 15px;
+        font-size: 0.9rem;
+        color: #666;
+    }
+
+    .detail-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+
+    .detail-item i {
+        width: 20px;
+        margin-right: 8px;
+        color: #4776E6;
+    }
+
+    .exam-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .btn-action {
+        padding: 10px 20px;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+    }
+
+    .btn-primary {
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 10px rgba(71, 118, 230, 0.2);
+    }
+
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(71, 118, 230, 0.3);
+    }
+
+    .btn-secondary {
+        background: #f0f0f8;
+        color: #555;
+        border: none;
+    }
+
+    .btn-secondary:hover {
+        background: #e0e0f0;
+        color: #333;
+    }
+
+    .btn-info {
+        background: #3498db;
+        color: white;
+        border: none;
+        box-shadow: 0 4px 10px rgba(52, 152, 219, 0.2);
+    }
+
+    .btn-info:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(52, 152, 219, 0.3);
+    }
+
+    .text-muted {
+        color: #95a5a6;
+        font-size: 0.9rem;
+        font-style: italic;
+    }
+
+    /* No exams state */
+    .no-exams {
+        text-align: center;
+        padding: 40px 20px;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+    }
+
+    .no-exams-icon {
+        font-size: 4rem;
+        color: #e0e0e0;
+        margin-bottom: 20px;
+    }
+
+    .no-exams-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 10px;
+    }
+
+    .no-exams-text {
+        color: #666;
+        margin-bottom: 20px;
+    }
+
+    /* Mobile responsive adjustments */
+    @media (max-width: 768px) {
+        .dashboard-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .stats-container {
+            grid-template-columns: repeat(auto-fill, minmax(100%, 1fr));
+        }
+
+        .exams-container {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Alternative table layout for larger screens */
+    .exams-table-container {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        overflow: hidden;
+        margin-bottom: 30px;
+    }
+
+    .exams-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .exams-table th {
+        background: linear-gradient(90deg, #f8f9fa, #f1f3f9);
+        padding: 15px 20px;
+        text-align: left;
+        font-weight: 600;
+        color: #333;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .exams-table td {
+        padding: 15px 20px;
+        border-bottom: 1px solid #eaeaea;
+        vertical-align: middle;
+    }
+
+    .exams-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .exams-table tbody tr {
+        transition: all 0.2s;
+    }
+
+    .exams-table tbody tr:hover {
+        background-color: rgba(71, 118, 230, 0.03);
+    }
+
+    .status-indicator {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+    }
+
+    .dot-registered { background-color: #3498db; }
+    .dot-available { background-color: #2ecc71; }
+    .dot-upcoming { background-color: #f39c12; }
+    .dot-completed { background-color: #9b59b6; }
+    .dot-pending { background-color: #95a5a6; }
+
+    /* Tab navigation for different exam categories */
+    .tabs-container {
+        margin-bottom: 25px;
+    }
+
+    .tabs-nav {
+        display: flex;
+        overflow-x: auto;
+        scrollbar-width: none; /* For Firefox */
+        -ms-overflow-style: none; /* For Internet Explorer and Edge */
+        margin-bottom: 25px;
+        border-bottom: 1px solid #eaeaea;
+    }
+
+    .tabs-nav::-webkit-scrollbar {
+        display: none; /* For Chrome, Safari, and Opera */
+    }
+
+    .tab {
+        padding: 12px 25px;
+        color: #666;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        position: relative;
+        transition: all 0.3s;
+    }
+
+    .tab.active {
+        color: #4776E6;
+    }
+
+    .tab::after {
+        content: '';
+        position: absolute;
+        bottom: -1px;
+        left: 0;
+        width: 100%;
+        height: 3px;
+        background: linear-gradient(90deg, #4776E6, #8E54E9);
+        transform: scaleX(0);
+        transition: transform 0.3s;
+    }
+
+    .tab.active::after {
+        transform: scaleX(1);
+    }
+
+    .tab-content {
+        display: none;
+    }
+
+    .tab-content.active {
+        display: block;
+        animation: fadeIn 0.5s ease-in-out;
+    }
+</style>
+
+<!-- Include FontAwesome for Icons -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+<div class="dashboard-container">
+    <div class="dashboard-header">
+        <h2 class="page-title">Student Dashboard</h2>
+    </div>
+
+    <p class="welcome-message">Welcome back, {{ session['username'] }}! Here's an overview of your exams and activities.</p>
+
+    <!-- Statistics Cards -->
+    <div class="stats-container">
+        <div class="stat-card registered">
+            <div class="stat-label">Registered Exams</div>
+            <div class="stat-value">{{ registered_exam_ids|length }}</div>
+            <i class="fas fa-clipboard-list stat-icon"></i>
+        </div>
+        <div class="stat-card available">
+            <div class="stat-label">Available Now</div>
+            <div class="stat-value" id="available-count">0</div>
+            <i class="fas fa-check-circle stat-icon"></i>
+        </div>
+        <div class="stat-card upcoming">
+            <div class="stat-label">Upcoming</div>
+            <div class="stat-value" id="upcoming-count">0</div>
+            <i class="fas fa-calendar-alt stat-icon"></i>
+        </div>
+        <div class="stat-card completed">
+            <div class="stat-label">Completed</div>
+            <div class="stat-value" id="completed-count">0</div>
+            <i class="fas fa-trophy stat-icon"></i>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="tabs-container">
+        <div class="tabs-nav">
+            <div class="tab active" data-tab="all">All Exams</div>
+            <div class="tab" data-tab="available">Available Now</div>
+            <div class="tab" data-tab="registered">Registered</div>
+            <div class="tab" data-tab="completed">Completed</div>
+        </div>
+    </div>
+
+    <!-- All Exams Tab - Card Layout -->
+    <div class="tab-content active" id="tab-all">
+        <div class="exams-section">
+            <h3 class="section-title">
+                <i class="fas fa-graduation-cap"></i> Your Exams
+            </h3>
+
+            {% if exams %}
+            <div class="exams-container">
+                {% for exam in exams %}
+                <div class="exam-card" data-status="{{ exam_statuses[exam.id] }}">
+                    <div class="exam-header">
+                        <h4 class="exam-name">{{ exam.name }}</h4>
+                        <div class="exam-date">
+                            <i class="far fa-calendar-alt"></i> {{ exam.date }}
+                        </div>
+                        <div class="exam-status status-{{ exam_statuses[exam.id] }}">
+                            {{ exam_statuses[exam.id] }}
+                        </div>
+                    </div>
+                    <div class="exam-body">
+                        <div class="exam-details">
+                            <div class="detail-item">
+                                <i class="fas fa-clock"></i>
+                                <span>Duration: {{ exam.time_limit }} minutes</span>
+                            </div>
+                            <div class="detail-item">
+                                <i class="fas fa-university"></i>
+                                <span>Eligibility: {{ exam.education_level }}</span>
+                            </div>
+                        </div>
+                        <div class="exam-actions">
+                            {% if exam.id in registered_exam_ids %}
+                                {% if exam_statuses[exam.id] == 'available' %}
+                                    <a href="{{ url_for('take_exam', exam_id=exam.id) }}" class="btn-action btn-primary">
+                                        <i class="fas fa-pen"></i> Take Exam
+                                    </a>
+                                {% elif exam_statuses[exam.id] == 'submitted' %}
+                                    {% if exam.results_published %}
+                                        <a href="{{ url_for('view_results', exam_id=exam.id) }}" class="btn-action btn-info">
+                                            <i class="fas fa-chart-bar"></i> View Results
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">Results Not Published</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="text-muted">{{ exam_statuses[exam.id] | capitalize }}</span>
+                                {% endif %}
+                            {% else %}
+                                <a href="{{ url_for('register_exam', exam_id=exam.id) }}" class="btn-action btn-secondary">
+                                    <i class="fas fa-clipboard-check"></i> Register
+                                </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="no-exams">
+                <div class="no-exams-icon">
+                    <i class="fas fa-book"></i>
+                </div>
+                <h3 class="no-exams-title">No Exams Available</h3>
+                <p class="no-exams-text">There are currently no exams available for you. Check back later.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Available Exams Tab -->
+    <div class="tab-content" id="tab-available">
+        <div class="exams-section">
+            <h3 class="section-title">
+                <i class="fas fa-check-circle"></i> Available Exams
+            </h3>
+            <div class="exams-container" id="available-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Registered Exams Tab -->
+    <div class="tab-content" id="tab-registered">
+        <div class="exams-section">
+            <h3 class="section-title">
+                <i class="fas fa-clipboard-list"></i> Registered Exams
+            </h3>
+            <div class="exams-container" id="registered-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Completed Exams Tab -->
+    <div class="tab-content" id="tab-completed">
+        <div class="exams-section">
+            <h3 class="section-title">
+                <i class="fas fa-trophy"></i> Completed Exams
+            </h3>
+            <div class="exams-container" id="completed-container">
+                <!-- Will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Alternative Table Layout -->
+    <div class="exams-table-container" style="display: none;">
+        <table class="exams-table">
+            <thead>
+                <tr>
+                    <th>Exam Name</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exam in exams %}
+                <tr>
+                    <td>{{ exam.name }}</td>
+                    <td>{{ exam.date }}</td>
+                    <td>
+                        <div class="status-indicator">
+                            <div class="status-dot dot-{{ exam_statuses[exam.id] }}"></div>
+                            {{ exam_statuses[exam.id] }}
+                        </div>
+                    </td>
+                    <td>
+                        {% if exam.id in registered_exam_ids %}
+                            {% if exam_statuses[exam.id] == 'available' %}
+                                <a href="{{ url_for('take_exam', exam_id=exam.id) }}" class="btn-action btn-primary">
+                                    <i class="fas fa-pen"></i> Take Exam
+                                </a>
+                            {% elif exam_statuses[exam.id] == 'submitted' %}
+                                {% if exam.results_published %}
+                                    <a href="{{ url_for('view_results', exam_id=exam.id) }}" class="btn-action btn-info">
+                                        <i class="fas fa-chart-bar"></i> View Results
+                                    </a>
+                                {% else %}
+                                    <span class="text-muted">Results Not Published</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">{{ exam_statuses[exam.id] | capitalize }}</span>
+                            {% endif %}
+                        {% else %}
+                            <a href="{{ url_for('register_exam', exam_id=exam.id) }}" class="btn-action btn-secondary">
+                                <i class="fas fa-clipboard-check"></i> Register
+                            </a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize counters
+        let availableCount = 0;
+        let upcomingCount = 0;
+        let completedCount = 0;
+        
+        // Get all exam cards and organize them by status
+        const examCards = document.querySelectorAll('.exam-card');
+        const availableContainer = document.getElementById('available-container');
+        const registeredContainer = document.getElementById('registered-container');
+        const completedContainer = document.getElementById('completed-container');
+        
+        // Clone exam cards to appropriate tabs
+        examCards.forEach(card => {
+            const status = card.getAttribute('data-status');
+            
+            // Count for statistical purposes
+            if (status === 'available') {
+                availableCount++;
+            } else if (status === 'upcoming') {
+                upcomingCount++;
+            } else if (status === 'submitted' || status === 'completed') {
+                completedCount++;
+            }
+            
+            // Clone cards to appropriate tabs
+            const isRegistered = card.querySelector('.btn-primary') || card.querySelector('.btn-info') || 
+                                card.querySelector('.text-muted');
+            
+            if (status === 'available') {
+                const clone = card.cloneNode(true);
+                availableContainer.appendChild(clone);
+            }
+            
+            if (isRegistered) {
+                const clone = card.cloneNode(true);
+                registeredContainer.appendChild(clone);
+            }
+            
+            if (status === 'submitted' || status === 'completed') {
+                const clone = card.cloneNode(true);
+                completedContainer.appendChild(clone);
+            }
+        });
+        
+        // Update stats count
+        document.getElementById('available-count').textContent = availableCount;
+        document.getElementById('upcoming-count').textContent = upcomingCount;
+        document.getElementById('completed-count').textContent = completedCount;
+        
+        // Handle empty states
+        [
+            {container: availableContainer, type: 'available'},
+            {container: registeredContainer, type: 'registered'},
+            {container: completedContainer, type: 'completed'}
+        ].forEach(item => {
+            if (!item.container.hasChildNodes()) {
+                const emptyState = createEmptyState(item.type);
+                item.container.appendChild(emptyState);
+            }
+        });
+        
+        // Tab navigation
+        const tabs = document.querySelectorAll('.tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const target = this.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show target content
+                tabContents.forEach(content => {
+                    content.classList.remove('active');
+                    if (content.id === `tab-${target}`) {
+                        content.classList.add('active');
+                    }
+                });
+            });
+        });
+    });
+    
+    // Create empty state element
+    function createEmptyState(type) {
+        const container = document.createElement('div');
+        container.className = 'no-exams';
+        
+        let icon, title, text;
+        
+        switch(type) {
+            case 'available':
+                icon = 'check-circle';
+                title = 'No Available Exams';
+                text = 'There are no exams available for you to take right now.';
+                break;
+            case 'registered':
+                icon = 'clipboard-list';
+                title = 'Not Registered for Any Exams';
+                text = 'You haven\'t registered for any exams yet.';
+                break;
+            case 'completed':
+                icon = 'trophy';
+                title = 'No Completed Exams';
+                text = 'You haven\'t completed any exams yet.';
+                break;
+            default:
+                icon = 'book';
+                title = 'No Exams Found';
+                text = 'There are no exams to display.';
+        }
+        
+        container.innerHTML = `
+            <div class="no-exams-icon">
+                <i class="fas fa-${icon}"></i>
+            </div>
+            <h3 class="no-exams-title">${title}</h3>
+            <p class="no-exams-text">${text}</p>
+        `;
+        
+        return container;
+    }
+</script>
 {% endblock %}
